@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050b14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>AeroQuest Terminal | Examination</title>
+    
+    <!-- Google Fonts for Sci-Fi Theme -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#03070c',
+                        panel: 'rgba(10, 25, 47, 0.65)',
+                        neon: '#00f0ff',
+                        neonHover: '#00c3ff',
+                        danger: '#ff2a2a',
+                        success: '#00ffaa'
+                    },
+                    fontFamily: {
+                        sci: ['Orbitron', 'sans-serif'],
+                        body: ['Rajdhani', 'sans-serif']
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* ================== GLOBAL & ANTI-CHEAT ================== */
+        body {
+            background-color: #03070c;
+            color: #e2e8f0;
+            overflow-x: hidden;
+            overscroll-behavior-y: none;
+            touch-action: pan-y;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* ================== BACKGROUND EFFECTS ================== */
+        .ambient-glow {
+            position: fixed;
+            top: 50%; left: 50%;
+            width: 150vw; height: 150vh;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.08) 0%, rgba(3, 7, 12, 1) 60%);
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        .grid-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            pointer-events: none;
+            perspective: 1000px;
+        }
+
+        /* ================== GLASSMORPHISM & UI ================== */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(10, 25, 47, 0.8) 0%, rgba(3, 7, 12, 0.9) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 240, 255, 0.03);
+        }
+
+        .neon-text {
+            color: #00f0ff;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5), 0 0 20px rgba(0, 240, 255, 0.3);
+        }
+
+        /* Buttons */
+        .btn-sci {
+            background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.05), transparent);
+            border: 1px solid #00f0ff;
+            color: #00f0ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .btn-sci::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+            z-index: -1;
+        }
+
+        .btn-sci:active:not(:disabled) {
+            transform: scale(0.95);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+            background: rgba(0, 240, 255, 0.15);
+        }
+
+        .btn-sci:disabled {
+            border-color: #1e293b;
+            color: #475569;
+            background: transparent;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Inputs */
+        .input-sci, .input-sci::placeholder {
+            -webkit-user-select: text !important;
+            user-select: text !important;
+        }
+        
+        .input-sci {
+            background: rgba(3, 7, 12, 0.7);
+            border: 1px solid #1e293b;
+            border-bottom: 2px solid #00f0ff;
+            color: #fff;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .input-sci:focus {
+            outline: none;
+            background: rgba(0, 240, 255, 0.03);
+            border-color: rgba(0, 240, 255, 0.5);
+            box-shadow: 0 10px 20px -5px rgba(0, 240, 255, 0.15), inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* Radio Options */
+        .option-label {
+            display: block;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .option-label:active { transform: scale(0.97); }
+        
+        .option-box {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .option-input:checked + .option-box {
+            background: rgba(0, 240, 255, 0.08);
+            border-color: #00f0ff;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.15) inset, 0 8px 20px rgba(0, 0, 0, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .option-input:checked + .option-box .option-letter {
+            background: #00f0ff;
+            color: #03070c;
+            box-shadow: 0 0 20px #00f0ff;
+            border-color: #00f0ff;
+        }
+
+        .option-input:checked + .option-box .option-indicator {
+            background: #03070c;
+        }
+
+        /* Animations */
+        .loader-spinner {
+            width: 60px; height: 60px;
+            border: 3px solid rgba(0, 240, 255, 0.1);
+            border-top-color: #00f0ff;
+            border-right-color: #00f0ff;
+            border-radius: 50%;
+            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        #progress-fill { transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        .toast-enter { animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .toast-exit { animation: fadeOut 0.4s ease-in forwards; }
+        @keyframes slideIn { from { transform: translateY(-150%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-20px) scale(0.9); } }
+
+        .hidden-section { display: none !important; opacity: 0; pointer-events: none; }
+        
+        /* Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.3); border-radius: 4px; }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.6); }
+    </style>
+</head>
+<body class="font-body antialiased min-h-screen h-[100dvh] flex flex-col items-center justify-center p-3 sm:p-5 relative selection:bg-neon selection:text-dark">
+    
+    <div class="ambient-glow"></div>
+    <div class="grid-bg"></div>
+
+    <!-- 🍞 Toast Notifications -->
+    <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-3 pointer-events-none w-[92%] sm:w-auto items-center"></div>
+
+    <!-- ⏳ Global Loader -->
+    <div id="loader-overlay" class="fixed inset-0 bg-dark/95 backdrop-blur-xl z-50 flex flex-col items-center justify-center hidden-section">
+        <div class="relative flex items-center justify-center mb-8">
+            <div class="absolute w-24 h-24 rounded-full border border-neon/20 animate-ping"></div>
+            <div class="loader-spinner"></div>
+        </div>
+        <div class="font-sci text-neon tracking-[0.3em] text-lg sm:text-xl animate-pulse text-center px-4 font-bold" id="loader-text">ESTABLISHING UPLINK...</div>
+        <div class="mt-4 text-xs text-slate-500 tracking-widest uppercase animate-pulse-slow">Secure connection protocol initiated</div>
+    </div>
+
+    <!-- 🚫 Anti-Cheat Blackout Screen -->
+    <div id="blur-warning" class="fixed inset-0 bg-dark/98 z-[9999] flex flex-col items-center justify-center hidden-section backdrop-blur-3xl">
+        <svg class="w-24 h-24 text-danger animate-pulse mb-8 drop-shadow-[0_0_30px_rgba(255,42,42,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+        </svg>
+        <h2 class="font-sci text-4xl sm:text-5xl text-danger tracking-[0.2em] uppercase font-black text-center px-4 drop-shadow-lg">Focus Lost</h2>
+        <div class="w-16 h-1 bg-danger/50 rounded-full my-6"></div>
+        <p class="text-slate-300 text-center px-6 max-w-md leading-relaxed text-sm sm:text-lg font-medium">Return to the terminal immediately.<br><span class="text-slate-500 text-sm mt-2 block">AI overlays, screen recording, and app switching are strictly prohibited.</span></p>
+    </div>
+
+    <!-- ================== 1. LOGIN SECTION ================== -->
+    <main id="login-section" class="w-full max-w-md w-full glass-panel rounded-[2rem] p-8 sm:p-10 transform transition-all duration-700 shadow-2xl animate-float relative overflow-hidden">
+        <!-- Decorative corner accents -->
+        <div class="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-neon/30 rounded-tl-[2rem]"></div>
+        <div class="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-neon/30 rounded-br-[2rem]"></div>
+
+        <div class="text-center mb-10 relative z-10">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-neon/5 border border-neon/20 text-neon text-[10px] sm:text-xs font-sci tracking-widest uppercase shadow-[0_0_15px_rgba(0,240,255,0.15)]">
+                <span class="w-2 h-2 rounded-full bg-neon animate-pulse"></span>
+                MCQ Assessment Portal
+            </div>
+            <h1 class="font-sci text-5xl sm:text-6xl neon-text mb-2 tracking-widest font-black uppercase">AeroQuest</h1>
+            <p class="text-slate-400 text-xs sm:text-sm tracking-[0.2em] uppercase mt-3 font-medium">Candidate Authentication</p>
+        </div>
+
+        <form id="login-form" class="space-y-8 relative z-10">
+            <div class="relative">
+                <label class="block text-slate-400 text-[10px] sm:text-xs tracking-[0.2em] uppercase mb-3 ml-2 font-semibold">Identification Roll Number</label>
+                <input type="text" id="roll-input" required autocomplete="off" placeholder="e.g. 25U201" 
+                       class="input-sci w-full px-6 py-4 sm:py-5 rounded-2xl font-sci text-2xl sm:text-xl uppercase placeholder-slate-700 text-center tracking-[0.3em] font-bold">
+            </div>
+            
+            <button type="submit" class="btn-sci w-full py-5 rounded-2xl font-sci font-bold text-lg sm:text-xl flex justify-center items-center gap-3 shadow-lg group">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Initiate Sequence
+            </button>
+            <div class="bg-danger/5 border border-danger/20 rounded-xl p-3 text-center">
+                <p class="text-[10px] text-danger uppercase tracking-[0.15em] font-bold">⚠️ Device will be locked to this session</p>
+            </div>
+        </form>
+        
+        <div class="mt-8 text-center border-t border-slate-800/60 pt-6 relative z-10">
+            <p class="text-[10px] text-slate-500 flex items-center justify-center gap-2 uppercase tracking-[0.2em] font-semibold">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-neon/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                End-to-End Encryption Active
+            </p>
+        </div>
+    </main>
+
+    <!-- ================== 2. QUIZ SECTION ================== -->
+    <main id="quiz-section" class="w-full max-w-4xl glass-panel rounded-[2rem] p-5 sm:p-10 hidden-section flex flex-col h-[96dvh] sm:h-[90vh] max-h-[1000px] shadow-2xl relative overflow-hidden">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-end border-b border-slate-700/50 pb-5 mb-5 sm:mb-8 shrink-0 relative z-10">
+            <div>
+                <p class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-[0.2em] mb-1.5 font-semibold">Candidate</p>
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+                    <h2 id="display-roll" class="font-sci text-xl sm:text-3xl text-white font-bold tracking-widest drop-shadow-md">---</h2>
+                </div>
+            </div>
+            <div class="text-right bg-dark/60 px-5 py-2.5 rounded-2xl border border-slate-700/50 shadow-inner backdrop-blur-sm">
+                <p class="text-[9px] sm:text-xs text-neon/80 uppercase tracking-[0.2em] mb-1 font-bold">Time Remaining</p>
+                <div id="timer-display" class="font-sci text-3xl sm:text-4xl neon-text tabular-nums leading-none font-black tracking-wider">10:00</div>
+            </div>
+        </header>
+
+        <!-- Progress Bar -->
+        <div class="mb-6 sm:mb-8 shrink-0 relative z-10">
+            <div class="flex justify-between text-[11px] sm:text-xs font-sci mb-3 font-bold tracking-[0.15em] uppercase">
+                <span id="question-counter" class="text-slate-300">Question 1 / X</span>
+                <span id="completion-percent" class="text-neon drop-shadow-[0_0_5px_rgba(0,240,255,0.5)]">0% Completed</span>
+            </div>
+            <div class="h-3 sm:h-2 w-full bg-slate-900 rounded-full overflow-hidden shadow-inner border border-slate-800">
+                <div id="progress-fill" class="h-full bg-gradient-to-r from-cyan-500 to-neon shadow-[0_0_15px_#00f0ff] w-0 relative rounded-full">
+                    <div class="absolute inset-0 bg-white/30 w-full animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question Area -->
+        <div class="flex-grow overflow-y-auto pr-2 sm:pr-4 pb-4 custom-scrollbar relative z-10 scroll-smooth">
+            <div class="bg-dark/50 p-6 sm:p-8 rounded-3xl border border-slate-700/40 mb-8 shadow-lg backdrop-blur-sm relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-neon/50"></div>
+                <h3 id="question-text" class="text-xl sm:text-3xl font-medium leading-relaxed text-slate-50 tracking-wide font-body">
+                    Loading telemetry data...
+                </h3>
+            </div>
+
+            <div id="options-container" class="space-y-4 sm:space-y-5 mb-4">
+                <!-- Options injected via JS -->
+            </div>
+        </div>
+
+        <!-- Navigation Footer -->
+        <footer class="mt-4 sm:mt-8 pt-5 border-t border-slate-700/50 flex justify-between items-center shrink-0 gap-4 relative z-10 bg-panel/30 -mx-5 -mb-5 p-5 sm:m-0 sm:p-0 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none rounded-b-[2rem]">
+            <button id="btn-prev" class="btn-sci px-5 py-4 sm:px-8 sm:py-3.5 rounded-2xl text-sm sm:text-base flex-1 sm:flex-none text-center font-bold tracking-[0.2em]">
+                &larr; Prev
+            </button>
+            
+            <button id="btn-next" class="btn-sci px-5 py-4 sm:px-8 sm:py-3.5 rounded-2xl text-sm sm:text-base flex-1 sm:flex-none text-center font-bold tracking-[0.2em]">
+                Next &rarr;
+            </button>
+            
+            <button id="btn-submit" class="hidden-section w-full sm:w-auto bg-neon border-none text-dark px-6 py-4 sm:py-3.5 rounded-2xl text-base sm:text-lg font-sci font-black uppercase tracking-[0.2em] transition-all shadow-[0_0_30px_rgba(0,240,255,0.6)] hover:scale-105 active:scale-95">
+                Transmit Data
+            </button>
+        </footer>
+    </main>
+
+    <!-- ================== 3. RESULT SECTION ================== -->
+    <main id="result-section" class="w-full max-w-md glass-panel rounded-[2rem] p-8 sm:p-12 text-center hidden-section shadow-2xl relative overflow-hidden">
+        <div class="absolute -top-20 -left-20 w-40 h-40 bg-success/20 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-20 -right-20 w-40 h-40 bg-neon/20 rounded-full blur-3xl"></div>
+
+        <div class="mb-10 relative z-10">
+            <div class="w-24 h-24 sm:w-28 sm:h-28 mx-auto bg-success/10 rounded-full flex items-center justify-center mb-6 border border-success/40 shadow-[0_0_40px_rgba(0,255,170,0.4)] relative">
+                <div class="absolute inset-0 rounded-full border border-success animate-ping opacity-20"></div>
+                <svg class="w-12 h-12 sm:w-14 sm:h-14 text-success drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h2 class="font-sci text-3xl sm:text-4xl text-white tracking-[0.15em] uppercase font-black drop-shadow-lg">Simulation<br>Complete</h2>
+            <p class="text-slate-400 mt-3 text-sm sm:text-base font-medium">Data encrypted and transmitted to central command.</p>
+        </div>
+
+        <div class="neon-border rounded-[1.5rem] p-8 mb-10 bg-dark/60 shadow-inner relative z-10">
+            <p class="text-xs sm:text-sm text-slate-400 uppercase tracking-[0.25em] mb-2 font-bold">Final Score</p>
+            <div class="font-sci text-5xl sm:text-7xl neon-text mb-3 font-black drop-shadow-xl tracking-wider">
+                <span id="score-display">0</span><span class="text-2xl sm:text-3xl text-slate-600 font-bold ml-1">/<span id="total-display">0</span></span>
+            </div>
+            <div class="w-12 h-1 bg-neon/50 rounded-full mx-auto my-4"></div>
+            <p id="score-message" class="text-sm sm:text-base text-slate-200 mt-2 font-medium leading-relaxed"></p>
+        </div>
+
+        <button onclick="window.location.reload()" class="btn-sci w-full py-5 rounded-2xl text-sm sm:text-base font-bold tracking-[0.2em] relative z-10">
+            Terminate Session
+        </button>
+    </main>
+
+    <!-- ================== 4. LOCKED SECTION (ANTI-CHEAT) ================== -->
+    <main id="locked-section" class="w-full max-w-md glass-panel border-2 border-danger shadow-[0_0_50px_rgba(255,42,42,0.3)] rounded-[2rem] p-8 sm:p-12 text-center hidden-section relative overflow-hidden">
+        <div class="absolute inset-0 bg-danger/5"></div>
+        
+        <div class="mb-8 relative z-10">
+            <div class="w-24 h-24 mx-auto bg-danger/10 rounded-full flex items-center justify-center mb-6 border border-danger/40 shadow-[0_0_40px_rgba(255,42,42,0.5)]">
+                <svg class="w-12 h-12 text-danger animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path>
+                </svg>
+            </div>
+            <h2 class="font-sci text-3xl sm:text-4xl text-danger tracking-[0.15em] uppercase font-black mb-3 drop-shadow-md">Session Locked</h2>
+            <p class="text-slate-300 mt-2 text-sm sm:text-base leading-relaxed font-medium">Critical security violations detected. Protocol terminated.</p>
+            
+            <div class="mt-8 p-5 bg-dark/80 border border-danger/30 rounded-2xl text-left shadow-inner">
+                <p class="text-[10px] text-danger/80 uppercase tracking-[0.2em] mb-2 font-bold">Terminal Violation Log:</p>
+                <p id="lock-reason-text" class="text-slate-200 text-sm font-medium tracking-wide leading-relaxed border-l-2 border-danger pl-3"></p>
+            </div>
+
+            <div class="mt-8 p-5 bg-gradient-to-br from-danger/20 to-danger/5 border border-danger/30 rounded-2xl">
+                <p class="text-white/80 font-sci tracking-[0.1em] text-xs sm:text-sm font-semibold">OVERRIDE REQUIRED</p>
+                <p class="text-white font-sci text-2xl sm:text-3xl mt-2 font-black tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">CALL ADMIN</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- ================== APPLICATION LOGIC ================== -->
+    <script>
+        /**
+         * ⚙️ CONFIGURATION & STATE
+         */
+        const API_URL = "https://script.google.com/macros/s/AKfycbyefHLxdpm_mp4UmnoQ2QQXOb9I7hjFoSIPA01F6O9deIOzp-xYxp-JKYwpVmMAcEgt/exec"; 
+        
+        let state = {
+            rollNo: '',
+            questions: [],
+            answers: {},
+            currentIndex: 0,
+            timeLeft: 0,
+            timerInterval: null,
+            isSubmitting: false,
+            tabSwitches: 0,
+            violationReason: ''
+        };
+
+        let preloadedQuestionsData = null;
+
+        const el = {
+            sections: {
+                login: document.getElementById('login-section'),
+                quiz: document.getElementById('quiz-section'),
+                result: document.getElementById('result-section'),
+                locked: document.getElementById('locked-section')
+            },
+            blurWarning: document.getElementById('blur-warning'),
+            loginForm: document.getElementById('login-form'),
+            rollInput: document.getElementById('roll-input'),
+            loader: document.getElementById('loader-overlay'),
+            loaderText: document.getElementById('loader-text'),
+            toastContainer: document.getElementById('toast-container'),
+            displayRoll: document.getElementById('display-roll'),
+            timerDisplay: document.getElementById('timer-display'),
+            questionCounter: document.getElementById('question-counter'),
+            completionPercent: document.getElementById('completion-percent'),
+            progressFill: document.getElementById('progress-fill'),
+            questionText: document.getElementById('question-text'),
+            optionsContainer: document.getElementById('options-container'),
+            btnPrev: document.getElementById('btn-prev'),
+            btnNext: document.getElementById('btn-next'),
+            btnSubmit: document.getElementById('btn-submit'),
+            scoreDisplay: document.getElementById('score-display'),
+            totalDisplay: document.getElementById('total-display'),
+            scoreMessage: document.getElementById('score-message'),
+            lockReasonText: document.getElementById('lock-reason-text')
+        };
+
+        /**
+         * 🌐 API COMMUNICATION
+         */
+        async function apiCall(action, payload = {}) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action, ...payload })
+                });
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
+            } catch (error) {
+                console.error("API Error:", error);
+                throw new Error("Connection to mainframe failed. Check network integrity.");
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const data = await apiCall('getQuestions');
+                if (data.success && data.questions) {
+                    preloadedQuestionsData = data.questions;
+                    console.log("[SYSTEM] Telemetry pre-loaded.");
+                }
+            } catch (e) {
+                console.log("[SYSTEM] Pre-load offline. Awaiting manual trigger.");
+            }
+        });
+
+        /**
+         * 🚀 CORE LOGIC
+         */
+        el.loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const rollNo = el.rollInput.value.trim().toUpperCase();
+            if (!rollNo) return;
+
+            requestFullscreen();
+            showLoader("AUTHENTICATING IDENTITY...");
+            
+            try {
+                const loginRes = await apiCall('login', { roll_no: rollNo });
+                
+                if (loginRes.success) {
+                    state.rollNo = rollNo;
+                    el.displayRoll.textContent = rollNo;
+                    recoverState(loginRes.time || 10);
+                    showToast("Authentication Successful", "success");
+
+                    if (preloadedQuestionsData) {
+                        processQuizData(preloadedQuestionsData);
+                    } else {
+                        el.loaderText.textContent = "DOWNLOADING MODULES...";
+                        const data = await apiCall('getQuestions');
+                        if (data.success && data.questions) {
+                            processQuizData(data.questions);
+                        } else {
+                            throw new Error("No modules found.");
+                        }
+                    }
+                } else {
+                    showToast(loginRes.message || "Access Denied.", "error");
+                    hideLoader();
+                }
+            } catch (error) {
+                showToast(error.message, "error");
+                hideLoader();
+            }
+        });
+
+        function processQuizData(questionsArray) {
+            state.questions = shuffleArray([...questionsArray]);
+            
+            state.questions.forEach(q => {
+                let opts = [
+                    { id: 'A', text: q.optionA },
+                    { id: 'B', text: q.optionB },
+                    { id: 'C', text: q.optionC },
+                    { id: 'D', text: q.optionD }
+                ].filter(opt => opt.text && opt.text.toString().trim() !== "");
+                q.shuffledOptions = shuffleArray(opts);
+            });
+            
+            hideLoader();
+            switchSection('quiz');
+            startTimer();
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = state.questions[state.currentIndex];
+            const total = state.questions.length;
+            
+            el.questionCounter.textContent = `Question ${state.currentIndex + 1} / ${total}`;
+            const percent = Math.round(((state.currentIndex) / total) * 100);
+            el.completionPercent.textContent = `${percent}% Completed`;
+            el.progressFill.style.width = `${percent}%`;
+            el.questionText.textContent = q.question;
+            el.optionsContainer.innerHTML = '';
+            
+            q.shuffledOptions.forEach(opt => {
+                const isChecked = state.answers[q.id] === opt.id ? 'checked' : '';
+                const optHTML = `
+                    <label class="option-label group pointer-events-auto">
+                        <input type="radio" name="question_${q.id}" value="${opt.id}" class="option-input hidden" ${isChecked} onchange="handleAnswerSelection('${q.id}', '${opt.id}')">
+                        <div class="option-box p-4 sm:p-6 min-h-[75px] rounded-2xl border border-slate-700/50 bg-slate-800/30 hover:bg-slate-700/40 flex items-center gap-4 transition-all duration-300 shadow-sm backdrop-blur-sm">
+                            <span class="option-letter w-8 h-8 shrink-0 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-sci text-sm font-bold transition-all duration-300 border border-slate-600 shadow-inner group-hover:border-neon/50">
+                                <div class="option-indicator w-2.5 h-2.5 rounded-full bg-slate-500 group-hover:bg-neon/70 transition-colors"></div>
+                            </span>
+                            <span class="text-slate-200 text-base sm:text-xl leading-snug w-full select-none font-medium">${opt.text}</span>
+                        </div>
+                    </label>
+                `;
+                el.optionsContainer.insertAdjacentHTML('beforeend', optHTML);
+            });
+
+            el.btnPrev.disabled = state.currentIndex === 0;
+            
+            if (state.currentIndex === total - 1) {
+                el.btnNext.classList.add('hidden-section');
+                el.btnSubmit.classList.remove('hidden-section');
+                checkSubmitStatus();
+            } else {
+                el.btnNext.classList.remove('hidden-section');
+                el.btnSubmit.classList.add('hidden-section');
+            }
+        }
+
+        window.handleAnswerSelection = function(qId, selectedOriginalLetter) {
+            state.answers[qId] = selectedOriginalLetter;
+            saveState(); 
+            checkSubmitStatus();
+        }
+
+        el.btnNext.addEventListener('click', () => {
+            if (state.currentIndex < state.questions.length - 1) {
+                state.currentIndex++;
+                renderQuestion();
+                el.optionsContainer.parentElement.scrollTop = 0;
+            }
+        });
+
+        el.btnPrev.addEventListener('click', () => {
+            if (state.currentIndex > 0) {
+                state.currentIndex--;
+                renderQuestion();
+            }
+        });
+
+        function checkSubmitStatus() {
+            const answeredCount = Object.keys(state.answers).length;
+            const totalCount = state.questions.length;
+            const percent = Math.round((answeredCount / totalCount) * 100);
+            el.completionPercent.textContent = `${percent}% Answered`;
+            el.progressFill.style.width = `${percent}%`;
+
+            if (answeredCount === totalCount) {
+                el.btnSubmit.disabled = false;
+                el.btnSubmit.classList.add('animate-pulse');
+            } else {
+                el.btnSubmit.disabled = true;
+                el.btnSubmit.classList.remove('animate-pulse');
+            }
+        }
+
+        el.btnSubmit.addEventListener('click', () => submitQuiz(false));
+
+        async function submitQuiz(isAuto = false, isCheat = false, cheatReason = "") {
+            if (state.isSubmitting) return;
+            state.isSubmitting = true;
+            clearInterval(state.timerInterval);
+            
+            if (isCheat) {
+                state.answers = {}; 
+            } else if (isAuto) {
+                showToast("Time Expired! Auto-submitting data...", "warning");
+            }
+
+            showLoader("TRANSMITTING TO MAINFRAME...");
+
+            try {
+                const res = await apiCall('submit', { 
+                    roll_no: state.rollNo, 
+                    answers: state.answers 
+                });
+
+                if (res.success) {
+                    localStorage.removeItem(`aeroQuiz_${state.rollNo}`);
+                    hideLoader();
+                    exitFullscreen();
+
+                    if (isCheat) {
+                        el.lockReasonText.textContent = cheatReason || state.violationReason || "Multiple undocumented security events.";
+                        switchSection('locked');
+                    } else {
+                        el.scoreDisplay.textContent = res.score;
+                        el.totalDisplay.textContent = res.total || state.questions.length;
+                        
+                        const ratio = res.score / (res.total || state.questions.length);
+                        if (ratio >= 0.8) el.scoreMessage.innerHTML = "Outstanding Performance.<br><span class='text-neon font-bold tracking-wider mt-1 block'>Cleared for Advanced Operations.</span>";
+                        else if (ratio >= 0.5) el.scoreMessage.innerHTML = "<span class='text-slate-300'>Standard Parameters Met. Cleared for basic duty.</span>";
+                        else el.scoreMessage.innerHTML = "<span class='text-danger font-bold'>Parameters Failed. Remedial training required.</span>";
+
+                        switchSection('result');
+                    }
+                } else {
+                    throw new Error(res.message || "Transmission failed.");
+                }
+            } catch (error) {
+                showToast(error.message, "error");
+                state.isSubmitting = false; 
+                hideLoader();
+            }
+        }
+
+        /**
+         * ⏱️ TIMER
+         */
+        function startTimer() {
+            updateTimerUI();
+            state.timerInterval = setInterval(() => {
+                state.timeLeft--;
+                saveState();
+                updateTimerUI();
+
+                if (state.timeLeft <= 0) {
+                    clearInterval(state.timerInterval);
+                    submitQuiz(true);
+                } else if (state.timeLeft === 60) {
+                    showToast("WARNING: 60 SECONDS REMAINING", "warning");
+                    el.timerDisplay.classList.add('text-danger', 'animate-pulse');
+                    el.timerDisplay.classList.remove('neon-text');
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            let m = Math.floor(state.timeLeft / 60);
+            let s = state.timeLeft % 60;
+            el.timerDisplay.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        /**
+         * 💾 STATE MANAGEMENT
+         */
+        function saveState() {
+            if (!state.rollNo) return;
+            localStorage.setItem(`aeroQuiz_${state.rollNo}`, JSON.stringify({
+                answers: state.answers,
+                timeLeft: state.timeLeft,
+                tabSwitches: state.tabSwitches,
+                violationReason: state.violationReason
+            }));
+        }
+
+        function recoverState(defaultTime) {
+            const saved = localStorage.getItem(`aeroQuiz_${state.rollNo}`);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    state.answers = parsed.answers || {};
+                    state.tabSwitches = parsed.tabSwitches || 0;
+                    state.violationReason = parsed.violationReason || '';
+                    state.timeLeft = parsed.timeLeft > 0 ? parsed.timeLeft : defaultTime * 60;
+                } catch(e) { state.timeLeft = defaultTime * 60; }
+            } else { state.timeLeft = defaultTime * 60; }
+        }
+
+        /**
+         * 🛡️ STRICT ANTI-CHEAT
+         */
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        ['copy', 'cut', 'paste', 'dragstart', 'drop'].forEach(evt => document.addEventListener(evt, e => { e.preventDefault(); return false; }));
+        document.addEventListener('selectstart', e => { if (e.target.tagName !== 'INPUT') { e.preventDefault(); return false; } });
+
+        let lastViolationTime = 0;
+
+        function handleSecurityViolation(reason) {
+            if (state.isSubmitting || el.sections.quiz.classList.contains('hidden-section')) return;
+            
+            const now = Date.now();
+            if (now - lastViolationTime < 1500) return; 
+            lastViolationTime = now;
+            
+            state.tabSwitches++;
+            state.violationReason = reason;
+            saveState();
+            
+            if (state.tabSwitches >= 3) {
+                submitQuiz(false, true, reason);
+            } else {
+                const warningsLeft = 3 - state.tabSwitches;
+                showToast(`SECURITY ALERT: ${reason} <br><span class="text-white font-bold mt-1 block">${warningsLeft} STRIKE(S) REMAINING</span>`, "error");
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                if (!state.isSubmitting && !el.sections.quiz.classList.contains('hidden-section')) {
+                    el.sections.quiz.style.visibility = 'hidden'; 
+                    el.blurWarning.classList.remove('hidden-section');
+                }
+                handleSecurityViolation("Application backgrounded or tab switched.");
+            } else {
+                if (state.tabSwitches < 3) {
+                    el.sections.quiz.style.visibility = 'visible';
+                    el.blurWarning.classList.add('hidden-section');
+                }
+            }
+        });
+
+        window.addEventListener('blur', () => {
+            if (!state.isSubmitting && !el.sections.quiz.classList.contains('hidden-section')) {
+                el.sections.quiz.style.visibility = 'hidden'; 
+                el.blurWarning.classList.remove('hidden-section');
+            }
+            handleSecurityViolation("Focus lost (Screen capture, AI overlay, or notifications).");
+        });
+
+        window.addEventListener('focus', () => {
+            if (state.tabSwitches < 3) {
+                el.sections.quiz.style.visibility = 'visible';
+                el.blurWarning.classList.add('hidden-section');
+            }
+        });
+
+        window.addEventListener('beforeunload', (e) => {
+            if (!state.isSubmitting && state.rollNo && el.sections.result.classList.contains('hidden-section') && el.sections.locked.classList.contains('hidden-section')) {
+                e.preventDefault(); e.returnValue = '';
+            }
+        });
+
+        function requestFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) elem.requestFullscreen().catch(()=>{});
+            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen().catch(()=>{});
+        }
+
+        function exitFullscreen() {
+            if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(()=>{});
+        }
+
+        /**
+         * 🛠️ UTILITIES
+         */
+        function switchSection(sectionId) {
+            Object.values(el.sections).forEach(sec => sec.classList.add('hidden-section'));
+            el.sections[sectionId].classList.remove('hidden-section');
+            if (el.blurWarning) el.blurWarning.classList.add('hidden-section');
+            el.sections[sectionId].style.opacity = '0';
+            setTimeout(() => {
+                el.sections[sectionId].style.transition = 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                el.sections[sectionId].style.opacity = '1';
+            }, 50);
+        }
+
+        function showLoader(text) {
+            el.loaderText.textContent = text;
+            el.loader.classList.remove('hidden-section');
+            el.toastContainer.classList.add('hidden-section');
+        }
+
+        function hideLoader() {
+            el.loader.classList.add('hidden-section');
+            el.toastContainer.classList.remove('hidden-section');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            let theme = type === 'error' || type === 'warning' ? 
+                'border-danger shadow-[0_0_20px_rgba(255,42,42,0.3)] text-red-100 bg-dark/98' : 
+                type === 'success' ? 
+                'border-success shadow-[0_0_20px_rgba(0,255,170,0.2)] text-green-100 bg-dark/98' : 
+                'border-neon shadow-[0_0_20px_rgba(0,240,255,0.2)] text-cyan-50 bg-dark/98';
+
+            let icon = type === 'error' || type === 'warning' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️';
+
+            toast.className = `toast-enter glass-panel border ${theme} px-5 py-4 rounded-2xl text-xs sm:text-sm font-sci flex flex-row items-center gap-4 w-full sm:w-max sm:max-w-md pointer-events-auto leading-relaxed`;
+            toast.innerHTML = `<span class="text-2xl drop-shadow-md">${icon}</span> <span class="flex-1 font-medium tracking-wide">${message}</span>`;
+            
+            el.toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.replace('toast-enter', 'toast-exit');
+                setTimeout(() => toast.remove(), 400);
+            }, 5000);
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+    </script>
+</body>
+</html>
