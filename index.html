@@ -187,7 +187,7 @@
     
     <div class="grid-bg"></div>
 
-    <!-- 🍞 Toast Notifications (Moved to top of the screen) -->
+    <!-- 🍞 Toast Notifications (Top Anchored) -->
     <div id="toast-container" class="fixed top-4 sm:top-6 left-0 right-0 mx-auto z-[100] flex flex-col gap-3 pointer-events-none w-[92%] sm:max-w-md items-center"></div>
 
     <!-- ⏳ Global Loader -->
@@ -218,8 +218,7 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-neon animate-pulse"></span>
                 MCQ Assessment Portal
             </div>
-            <!-- Scaled text-4xl on mobile to perfectly fit inside the frame -->
-            <h1 class="font-sci text-4xl sm:text-5xl neon-text tracking-wider font-black uppercase drop-shadow-lg leading-none">AEROQUEST</h1>
+            <h1 class="font-sci text-4xl sm:text-5xl neon-text tracking-wider font-black uppercase drop-shadow-lg leading-none w-full whitespace-nowrap overflow-hidden text-ellipsis">AEROQUEST</h1>
             <p class="text-slate-400 text-[10px] sm:text-xs tracking-[0.2em] uppercase font-bold mt-3">Candidate Authentication</p>
         </div>
 
@@ -285,6 +284,8 @@
         <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4 min-h-0 relative scroll-smooth flex flex-col">
             
             <div class="bg-slate-900/60 p-5 rounded-2xl border-l-4 border-l-neon mb-6 shrink-0 shadow-lg">
+                <!-- Optional Dynamic Image -->
+                <img id="question-image" src="" alt="Question Media" class="hidden-section w-full max-h-56 sm:max-h-64 object-contain rounded-xl mb-4 border border-slate-700/50 bg-black/40">
                 <h3 id="question-text" class="text-[17px] sm:text-xl font-medium leading-relaxed text-slate-100 tracking-wide font-body">
                     Loading telemetry data...
                 </h3>
@@ -312,7 +313,6 @@
     </main>
 
     <!-- ================== 3. RESULT SECTION ================== -->
-    <!-- Applying Frame/Card style consistent with login screen -->
     <main id="result-section" class="w-full max-w-[90%] sm:max-w-sm glass-panel rounded-[2rem] p-6 sm:p-8 flex flex-col justify-center text-center hidden-section relative mx-auto shadow-2xl">
         <div class="mb-8 relative z-10">
             <div class="w-20 h-20 mx-auto bg-success/10 rounded-full flex items-center justify-center mb-5 border border-success/40 shadow-[0_0_30px_rgba(0,255,170,0.2)]">
@@ -320,7 +320,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
                 </svg>
             </div>
-            <h2 class="font-sci text-3xl text-white tracking-[0.1em] uppercase font-black drop-shadow-lg leading-tight">Simulation<br>Complete</h2>
+            <h2 class="font-sci text-3xl text-white tracking-[0.1em] uppercase font-black drop-shadow-lg leading-tight w-full">Simulation<br>Complete</h2>
             <p class="text-slate-400 mt-2 text-xs font-medium uppercase tracking-widest">Data Encrypted & Transmitted</p>
         </div>
 
@@ -339,7 +339,6 @@
     </main>
 
     <!-- ================== 4. LOCKED SECTION (ANTI-CHEAT) ================== -->
-    <!-- Applying Frame/Card style consistent with login screen -->
     <main id="locked-section" class="w-full max-w-[90%] sm:max-w-sm glass-panel border-2 border-danger shadow-[0_0_50px_rgba(255,42,42,0.3)] rounded-[2rem] p-6 sm:p-8 flex flex-col justify-center text-center hidden-section relative mx-auto">
         <div class="absolute inset-0 bg-danger/5 pointer-events-none rounded-[2rem]"></div>
         
@@ -372,7 +371,7 @@
         /**
          * ⚙️ CONFIGURATION & STATE
          */
-        const API_URL = "https://script.google.com/macros/s/AKfycbyefHLxdpm_mp4UmnoQ2QQXOb9I7hjFoSIPA01F6O9deIOzp-xYxp-JKYwpVmMAcEgt/exec"; 
+        const API_URL = "https://script.google.com/macros/s/AKfycbwKC5RH5r5HeoaIga02TCAVPoo3Kk9tIJfHo6p17eUxhCMEZ54-kDSjZ-cRyFbNwIPZ/exec"; 
         
         let state = {
             rollNo: '',
@@ -407,6 +406,7 @@
             completionPercent: document.getElementById('completion-percent'),
             progressFill: document.getElementById('progress-fill'),
             questionText: document.getElementById('question-text'),
+            questionImage: document.getElementById('question-image'), // New image element
             optionsContainer: document.getElementById('options-container'),
             btnPrev: document.getElementById('btn-prev'),
             btnNext: document.getElementById('btn-next'),
@@ -519,6 +519,16 @@
             el.completionPercent.textContent = `${percent}% Answered`;
             el.progressFill.style.width = `${percent}%`;
             el.questionText.textContent = q.question;
+
+            // Optional Image Logic
+            if (q.image && q.image.trim() !== "") {
+                el.questionImage.src = q.image.trim();
+                el.questionImage.classList.remove('hidden-section');
+            } else {
+                el.questionImage.src = "";
+                el.questionImage.classList.add('hidden-section');
+            }
+            
             el.optionsContainer.innerHTML = '';
             
             q.shuffledOptions.forEach(opt => {
