@@ -1,848 +1,1383 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#03070c">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>AeroQuest</title>
-    
-    <!-- Google Fonts for Sci-Fi Theme -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#03070c',
-                        panel: 'rgba(10, 25, 47, 0.65)',
-                        neon: '#00f0ff',
-                        neonHover: '#00c3ff',
-                        danger: '#ff2a2a',
-                        success: '#00ffaa'
-                    },
-                    fontFamily: {
-                        sci: ['Orbitron', 'sans-serif'],
-                        body: ['Rajdhani', 'sans-serif']
-                    },
-                    animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'float': 'float 6s ease-in-out infinite',
-                    }
-                }
-            }
-        }
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#020510">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>AeroQuest — MCQ Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-    <style>
-        /* ================== GLOBAL & MOBILE OPTIMIZATIONS ================== */
-        :root {
-            --safe-bottom: env(safe-area-inset-bottom, 16px);
-            --safe-top: env(safe-area-inset-top, 16px);
-        }
+<style>
+/* ─────────────────────────────────────────────
+   DESIGN TOKENS
+───────────────────────────────────────────── */
+:root {
+  --bg:          #020510;
+  --surface:     rgba(8, 16, 40, 0.70);
+  --surface2:    rgba(15, 26, 60, 0.55);
+  --border:      rgba(100, 160, 255, 0.12);
+  --border-hi:   rgba(100, 160, 255, 0.4);
+  --accent:      #5b8fff;
+  --accent-glow: rgba(91, 143, 255, 0.35);
+  --accent2:     #00e5c8;
+  --accent2-glow:rgba(0, 229, 200, 0.3);
+  --danger:      #ff4d6a;
+  --danger-glow: rgba(255, 77, 106, 0.3);
+  --success:     #00e5c8;
+  --warn:        #ffb84d;
+  --text:        #d6e4ff;
+  --muted:       rgba(180, 200, 255, 0.45);
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --r:           20px;
+  --r-sm:        14px;
+}
 
-        body {
-            background-color: #03070c;
-            color: #e2e8f0;
-            overflow: hidden; /* STRICT: No scrolling on the body level */
-            overscroll-behavior: none;
-            touch-action: pan-y;
-            -webkit-tap-highlight-color: transparent;
-        }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        * {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-        }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-        /* ================== BACKGROUND EFFECTS ================== */
-        .grid-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background-image: linear-gradient(rgba(0, 240, 255, 0.02) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0, 240, 255, 0.02) 1px, transparent 1px);
-            background-size: 40px 40px;
-            z-index: -1;
-            pointer-events: none;
-        }
+input, textarea { -webkit-user-select: text !important; user-select: text !important; }
 
-        .neon-text {
-            color: #00f0ff;
-            text-shadow: 0 0 10px rgba(0, 240, 255, 0.6), 0 0 20px rgba(0, 240, 255, 0.4);
-        }
+/* ─────────────────────────────────────────────
+   CANVAS BACKGROUND (stars painted by JS)
+───────────────────────────────────────────── */
+#starfield {
+  position: fixed; inset: 0;
+  z-index: 0; pointer-events: none;
+}
 
-        /* Glass Panel Frame */
-        .glass-panel {
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(3, 7, 12, 0.9) 100%);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 240, 255, 0.15);
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 240, 255, 0.05);
-        }
+/* Nebula blobs */
+.nebula {
+  position: fixed; border-radius: 50%;
+  filter: blur(100px); pointer-events: none; z-index: 0;
+  animation: nebulaFloat 20s ease-in-out infinite alternate;
+}
+.n1 { width: 500px; height: 400px; top: -10%; left: -8%;
+      background: radial-gradient(ellipse, rgba(91,143,255,0.09) 0%, transparent 70%); }
+.n2 { width: 450px; height: 450px; bottom: -10%; right: -8%;
+      background: radial-gradient(ellipse, rgba(0,229,200,0.08) 0%, transparent 70%);
+      animation-delay: -10s; }
+.n3 { width: 300px; height: 300px; top: 40%; left: 30%;
+      background: radial-gradient(ellipse, rgba(150,91,255,0.06) 0%, transparent 70%);
+      animation-delay: -5s; }
 
-        /* ================== INPUTS ================== */
-        .input-sci, .input-sci::placeholder {
-            -webkit-user-select: text !important;
-            user-select: text !important;
-        }
-        
-        .input-sci {
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid #1e293b;
-            border-radius: 0.75rem;
-            color: #fff;
-            transition: all 0.3s ease;
-            font-size: 16px; /* Prevents iOS auto-zoom */
-        }
-        
-        .input-sci:focus {
-            outline: none;
-            border-color: #00f0ff;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), inset 0 0 10px rgba(0, 240, 255, 0.05);
-            background: rgba(0, 240, 255, 0.05);
-        }
+@keyframes nebulaFloat {
+  from { transform: scale(1) translate(0,0); opacity: 0.8; }
+  to   { transform: scale(1.15) translate(20px, 15px); opacity: 1; }
+}
 
-        /* ================== RADIO OPTIONS ================== */
-        .option-label {
-            display: block;
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .option-label:active { transform: scale(0.96); }
-        
-        .option-box {
-            background: rgba(15, 23, 42, 0.4);
-            border: 1.5px solid #1e293b;
-            border-radius: 1rem;
-            transition: all 0.25s ease;
-        }
+/* Scanline overlay */
+body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+}
 
-        .option-input:checked + .option-box {
-            border-color: #00f0ff;
-            background: rgba(0, 240, 255, 0.08);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15) inset, 0 4px 15px rgba(0,0,0,0.5);
-        }
+/* ─────────────────────────────────────────────
+   GLASS CARD
+───────────────────────────────────────────── */
+.card {
+  position: relative; z-index: 10;
+  background: var(--surface);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 40px 80px -20px rgba(0,0,0,0.7),
+    0 0 60px -20px var(--accent-glow);
+  overflow: hidden;
+}
 
-        .option-indicator-outer {
-            border: 2px solid #334155;
-            background: transparent;
-            transition: all 0.25s ease;
-        }
+.card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(91,143,255,0.5) 40%, rgba(0,229,200,0.4) 60%, transparent);
+}
 
-        .option-indicator-inner {
-            background: #334155;
-            transition: all 0.25s ease;
-            opacity: 0.5;
-        }
+/* ─────────────────────────────────────────────
+   SECTION VISIBILITY
+───────────────────────────────────────────── */
+.section { display: none; }
+.section.active { display: flex; }
 
-        .option-input:checked + .option-box .option-indicator-outer {
-            border-color: #00f0ff;
-            box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
-        }
+/* ─────────────────────────────────────────────
+   TYPOGRAPHY
+───────────────────────────────────────────── */
+.font-display { font-family: 'Syne', sans-serif; }
+.font-mono    { font-family: 'Space Mono', monospace; }
 
-        .option-input:checked + .option-box .option-indicator-inner {
-            background: #00f0ff;
-            box-shadow: 0 0 8px #00f0ff;
-            opacity: 1;
-        }
+/* ─────────────────────────────────────────────
+   LOADER OVERLAY
+───────────────────────────────────────────── */
+#loader-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(2,5,16,0.92);
+  backdrop-filter: blur(20px);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px;
+}
+#loader-overlay.active { display: flex; }
 
-        /* ================== UTILITIES & ANIMATIONS ================== */
-        .loader-spinner {
-            width: 50px; height: 50px;
-            border: 3px solid rgba(0, 240, 255, 0.1);
-            border-top-color: #00f0ff;
-            border-right-color: #00f0ff;
-            border-radius: 50%;
-            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-        }
+.spinner-ring {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-right-color: var(--accent2);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        #progress-fill { transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .hidden-section { display: none !important; opacity: 0; pointer-events: none; }
-        
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.2); border-radius: 4px; }
-        
-        /* Toast specific top-down animations */
-        .toast-enter { animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        .toast-exit { animation: fadeOutUp 0.3s ease-in forwards; }
-        @keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes fadeOutUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+.loader-text {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  animation: blink 1.5s ease infinite;
+}
+@keyframes blink { 0%,100%{ opacity:1} 50%{opacity:0.4} }
 
-        .pb-safe { padding-bottom: max(1rem, var(--safe-bottom)); }
-        .pt-safe { padding-top: max(1rem, var(--safe-top)); }
-    </style>
+/* ─────────────────────────────────────────────
+   TOAST
+───────────────────────────────────────────── */
+#toast-container {
+  position: fixed;
+  top: max(16px, var(--safe-top));
+  left: 50%; transform: translateX(-50%);
+  width: min(94vw, 400px);
+  z-index: 500;
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  background: rgba(8,16,40,0.95);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
+  display: flex; align-items: flex-start; gap: 12px;
+  backdrop-filter: blur(20px);
+  animation: toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.6);
+}
+.toast.exiting { animation: toastOut 0.3s ease forwards; }
+.toast-icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
+.toast-msg { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; line-height: 1.5; }
+.toast.error  { border-color: var(--danger-glow); box-shadow: 0 0 30px -10px var(--danger-glow); }
+.toast.success{ border-color: var(--accent2-glow); box-shadow: 0 0 30px -10px var(--accent2-glow); }
+.toast.warning{ border-color: rgba(255,184,77,0.3); }
+
+@keyframes toastIn  { from{ transform:translateY(-120%) scale(0.9); opacity:0 } to{ transform:translateY(0) scale(1); opacity:1 } }
+@keyframes toastOut { from{ opacity:1; transform:translateY(0)    } to{ opacity:0; transform:translateY(-20px) } }
+
+/* ─────────────────────────────────────────────
+   ANTI-CHEAT BLUR
+───────────────────────────────────────────── */
+#blur-warning {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(2,5,16,0.97);
+  backdrop-filter: blur(30px);
+  display: none;
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; text-align: center; padding: 32px;
+}
+#blur-warning.active { display: flex; }
+
+.blur-icon {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 1.5px solid var(--danger);
+  display: flex; align-items: center; justify-content: center;
+  animation: pulseDanger 2s ease infinite;
+  color: var(--danger); font-size: 28px;
+}
+@keyframes pulseDanger { 0%,100%{box-shadow:0 0 0 0 var(--danger-glow)} 50%{box-shadow:0 0 0 16px transparent} }
+
+/* ─────────────────────────────────────────────
+   ── 1. LOGIN ──
+───────────────────────────────────────────── */
+#login-section {
+  width: min(92vw, 420px);
+  flex-direction: column;
+  padding: 36px 32px;
+  gap: 0;
+}
+
+@media (max-width:420px) { #login-section { padding: 28px 22px; } }
+
+.logo-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-hi);
+  border-radius: 100px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(91,143,255,0.07);
+  margin-bottom: 24px;
+}
+.logo-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: blink 2s ease infinite;
+}
+
+.logo-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(32px, 8vw, 46px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: #fff;
+  background: linear-gradient(135deg, #fff 30%, #8ab4ff 70%, #00e5c8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo-sub {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.form-section { margin-top: 32px; width: 100%; }
+
+.field-label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-family: 'Space Mono', monospace;
+}
+
+.field-input {
+  width: 100%;
+  background: rgba(5,12,30,0.7);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 18px 20px;
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+  outline: none;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+.field-input::placeholder { color: rgba(100,130,200,0.3); font-size: 14px; }
+.field-input:focus {
+  border-color: var(--accent);
+  background: rgba(91,143,255,0.05);
+  box-shadow: 0 0 0 3px var(--accent-glow), 0 0 30px -10px var(--accent-glow);
+}
+
+.btn-primary {
+  width: 100%;
+  margin-top: 16px;
+  padding: 18px 24px;
+  border-radius: var(--r-sm);
+  border: none; cursor: pointer;
+  background: linear-gradient(135deg, var(--accent) 0%, #3d6fe8 100%);
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: transform 0.15s, box-shadow 0.25s, filter 0.2s;
+  box-shadow: 0 8px 30px -8px var(--accent-glow), 0 2px 8px -2px rgba(91,143,255,0.6);
+  position: relative; overflow: hidden;
+}
+.btn-primary::before {
+  content: '';
+  position: absolute; top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transition: left 0.5s ease;
+}
+.btn-primary:hover::before { left: 200%; }
+.btn-primary:hover  { filter: brightness(1.1); box-shadow: 0 12px 40px -8px var(--accent-glow), 0 4px 15px -2px rgba(91,143,255,0.5); }
+.btn-primary:active { transform: scale(0.97); }
+
+.btn-icon { font-size: 16px; }
+
+.warning-strip {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255,77,106,0.2);
+  border-radius: var(--r-sm);
+  background: rgba(255,77,106,0.06);
+  display: flex; align-items: center; gap: 10px;
+}
+.warning-strip span { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,150,165,0.8); font-weight: 600; line-height: 1.5; }
+
+.login-footer {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  opacity: 0.6;
+}
+.login-footer span { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+
+/* ─────────────────────────────────────────────
+   ── 2. QUIZ ──
+───────────────────────────────────────────── */
+#quiz-section {
+  position: fixed; inset: 0;
+  flex-direction: column;
+  background: var(--bg);
+  z-index: 5;
+  overflow: hidden;
+}
+
+/* Subtle inner glow on quiz section */
+#quiz-section::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(91,143,255,0.04) 0%, transparent 70%);
+}
+
+.quiz-header {
+  flex-shrink: 0;
+  padding: max(16px, calc(var(--safe-top) + 12px)) 20px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid var(--border);
+  position: relative; z-index: 2;
+}
+
+@media (min-width: 600px) { .quiz-header { padding: 20px 32px 18px; } }
+
+.candidate-block { display: flex; flex-direction: column; gap: 4px; }
+.candidate-label {
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--muted); font-weight: 600; font-family: 'Space Mono', monospace;
+}
+.candidate-id {
+  display: flex; align-items: center; gap: 8px;
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  animation: blink 2s ease infinite;
+}
+.candidate-roll {
+  font-family: 'Space Mono', monospace;
+  font-size: 20px; font-weight: 700;
+  letter-spacing: 0.12em; color: #fff;
+}
+
+.timer-block {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+}
+.timer-label {
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--accent); font-weight: 700; font-family: 'Space Mono', monospace;
+}
+.timer-value {
+  font-family: 'Space Mono', monospace;
+  font-size: 28px; font-weight: 700;
+  color: var(--accent);
+  text-shadow: 0 0 20px var(--accent-glow);
+  letter-spacing: 0.05em;
+  transition: color 0.5s, text-shadow 0.5s;
+}
+.timer-value.danger {
+  color: var(--danger);
+  text-shadow: 0 0 20px var(--danger-glow);
+  animation: blink 1s ease infinite;
+}
+
+/* Progress track */
+.progress-track {
+  flex-shrink: 0;
+  padding: 14px 20px;
+  position: relative; z-index: 2;
+}
+@media (min-width: 600px) { .progress-track { padding: 14px 32px; } }
+
+.progress-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.progress-meta span {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); font-weight: 700;
+}
+.progress-meta .pct { color: var(--accent2); text-shadow: 0 0 10px var(--accent2-glow); }
+
+.progress-bar-bg {
+  height: 3px; background: rgba(255,255,255,0.06);
+  border-radius: 4px; overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 4px;
+  width: 0;
+  transition: width 0.5s cubic-bezier(0.34,1.3,0.64,1);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* Question area */
+.question-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  position: relative; z-index: 2;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+@media (min-width: 600px) { .question-scroll { padding: 20px 32px; } }
+
+/* Scrollbar */
+.question-scroll::-webkit-scrollbar { width: 3px; }
+.question-scroll::-webkit-scrollbar-track { background: transparent; }
+.question-scroll::-webkit-scrollbar-thumb { background: rgba(91,143,255,0.25); border-radius: 4px; }
+
+.question-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-sm);
+  padding: 20px;
+  margin-bottom: 18px;
+  position: relative;
+}
+.q-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--accent);
+  opacity: 0.7; margin-bottom: 10px;
+}
+.q-text {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(15px, 3.5vw, 18px);
+  font-weight: 400;
+  line-height: 1.7;
+  color: #e8f0ff;
+}
+.q-image {
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.4);
+}
+
+/* Options */
+.options-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; }
+
+.option-item {
+  cursor: pointer;
+  position: relative;
+}
+.option-item input[type="radio"] { display: none; }
+
+.option-box {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: rgba(8,16,40,0.5);
+  transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+  position: relative; overflow: hidden;
+}
+.option-box::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(91,143,255,0.06), transparent);
+  opacity: 0; transition: opacity 0.22s;
+}
+
+.option-item:active .option-box { transform: scale(0.98); }
+
+.option-item input:checked + .option-box {
+  border-color: var(--accent);
+  background: rgba(91,143,255,0.09);
+  box-shadow: 0 0 0 1px rgba(91,143,255,0.2) inset, 0 8px 24px -8px var(--accent-glow);
+}
+.option-item input:checked + .option-box::before { opacity: 1; }
+
+.option-radio {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(100,150,255,0.3);
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.22s, box-shadow 0.22s;
+}
+.option-radio-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: transparent;
+  transition: background 0.22s, box-shadow 0.22s;
+}
+.option-item input:checked + .option-box .option-radio {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.option-item input:checked + .option-box .option-radio-dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+.option-text {
+  font-size: clamp(14px, 3.2vw, 16px);
+  color: #c8daff;
+  line-height: 1.5;
+  font-weight: 400;
+}
+.option-item input:checked + .option-box .option-text {
+  color: #fff;
+}
+
+/* Footer nav */
+.quiz-footer {
+  flex-shrink: 0;
+  padding: 14px 20px max(14px, calc(var(--safe-bottom) + 10px));
+  border-top: 1px solid var(--border);
+  display: flex; gap: 10px;
+  position: relative; z-index: 2;
+  background: rgba(2,5,16,0.7);
+  backdrop-filter: blur(10px);
+}
+@media (min-width: 600px) { .quiz-footer { padding: 16px 32px max(16px, calc(var(--safe-bottom) + 12px)); } }
+
+.btn-nav {
+  flex: 1;
+  padding: 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-hi);
+  background: rgba(15,26,60,0.6);
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-nav:hover { border-color: rgba(91,143,255,0.35); color: var(--text); background: rgba(91,143,255,0.06); }
+.btn-nav:active { transform: scale(0.97); }
+.btn-nav:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+.btn-next-hi {
+  border-color: rgba(91,143,255,0.4);
+  color: var(--accent);
+  background: rgba(91,143,255,0.07);
+}
+.btn-next-hi:hover { background: rgba(91,143,255,0.13); border-color: var(--accent); }
+
+.btn-submit {
+  flex: 2;
+  background: linear-gradient(135deg, var(--accent2), #00b89f);
+  border: none;
+  color: #003830;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 16px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 8px 24px -6px var(--accent2-glow);
+}
+.btn-submit:hover { filter: brightness(1.1); box-shadow: 0 12px 32px -6px var(--accent2-glow); }
+.btn-submit:active { transform: scale(0.97); }
+.btn-submit:disabled { opacity: 0.45; cursor: not-allowed; background: rgba(0,229,200,0.3); box-shadow: none; }
+.btn-submit.pulse { animation: submitPulse 1.5s ease infinite; }
+@keyframes submitPulse { 0%,100%{box-shadow:0 8px 24px -6px var(--accent2-glow)} 50%{box-shadow:0 8px 40px -2px var(--accent2-glow)} }
+
+/* ─────────────────────────────────────────────
+   ── 3. RESULT ──
+───────────────────────────────────────────── */
+#result-section {
+  width: min(92vw, 420px);
+  flex-direction: column;
+  padding: 36px 32px;
+  text-align: center;
+  gap: 0;
+}
+@media (max-width:420px) { #result-section { padding: 28px 22px; } }
+
+.result-icon {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0,229,200,0.35);
+  background: rgba(0,229,200,0.08);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 24px;
+  box-shadow: 0 0 40px -10px var(--accent2-glow);
+  animation: resultPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes resultPop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+
+.result-icon svg { color: var(--accent2); }
+
+.result-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px; font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff; margin-bottom: 6px;
+  line-height: 1.2;
+}
+.result-sub {
+  font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--muted);
+  font-weight: 600; margin-bottom: 28px;
+  font-family: 'Space Mono', monospace;
+}
+
+.score-panel {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 24px;
+  margin-bottom: 24px;
+  position: relative; overflow: hidden;
+}
+.score-panel::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+}
+.score-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+}
+.score-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 60px; font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, #fff, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.score-total {
+  font-family: 'Space Mono', monospace;
+  font-size: 20px; color: var(--muted);
+  font-weight: 700; vertical-align: bottom;
+}
+.score-divider {
+  width: 40px; height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 4px; margin: 14px auto;
+}
+.score-msg { font-size: 13px; color: var(--text); line-height: 1.6; }
+
+.btn-end {
+  width: 100%;
+  padding: 18px;
+  border: 1px solid var(--border-hi);
+  border-radius: var(--r-sm);
+  background: rgba(91,143,255,0.06);
+  color: var(--accent);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-end:hover { background: rgba(91,143,255,0.12); border-color: var(--accent); }
+.btn-end:active { transform: scale(0.98); }
+
+/* ─────────────────────────────────────────────
+   ── 4. LOCKED ──
+───────────────────────────────────────────── */
+#locked-section {
+  width: min(92vw, 420px);
+  flex-direction: column;
+  padding: 36px 32px;
+  text-align: center;
+  border-color: rgba(255,77,106,0.25);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 40px 80px -20px rgba(0,0,0,0.7),
+    0 0 60px -20px var(--danger-glow);
+}
+@media (max-width:420px) { #locked-section { padding: 28px 22px; } }
+
+.lock-icon {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,77,106,0.35);
+  background: rgba(255,77,106,0.08);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  animation: lockPulse 2s ease infinite;
+}
+@keyframes lockPulse { 0%,100%{box-shadow:0 0 0 0 var(--danger-glow)} 50%{box-shadow:0 0 30px -4px var(--danger-glow)} }
+
+.lock-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px; font-weight: 800; color: var(--danger);
+  letter-spacing: -0.01em; margin-bottom: 8px;
+}
+.lock-sub {
+  font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 24px;
+}
+.violation-log {
+  text-align: left;
+  background: rgba(255,77,106,0.05);
+  border: 1px solid rgba(255,77,106,0.2);
+  border-radius: var(--r-sm);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+.violation-log-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--danger);
+  opacity: 0.8; margin-bottom: 8px; display: block;
+}
+.violation-log-text {
+  font-size: 12px; color: #ffccd4; line-height: 1.6;
+  border-left: 2px solid var(--danger); padding-left: 12px;
+}
+
+.override-panel {
+  background: rgba(255,77,106,0.08);
+  border: 1px solid rgba(255,77,106,0.25);
+  border-radius: var(--r-sm);
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 4px; align-items: center;
+}
+.override-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(255,150,165,0.7);
+}
+.override-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px; font-weight: 800;
+  color: #fff; letter-spacing: 0.05em;
+}
+
+</style>
 </head>
-<body class="font-body antialiased h-[100dvh] w-full flex flex-col items-center justify-center relative selection:bg-neon selection:text-dark">
-    
-    <div class="grid-bg"></div>
 
-    <!-- 🍞 Toast Notifications (Top Anchored) -->
-    <div id="toast-container" class="fixed top-4 sm:top-6 left-0 right-0 mx-auto z-[100] flex flex-col gap-3 pointer-events-none w-11/12 sm:max-w-md items-center"></div>
+<body>
+<!-- ══ Starfield canvas ══ -->
+<canvas id="starfield"></canvas>
 
-    <!-- ⏳ Global Loader -->
-    <div id="loader-overlay" class="fixed inset-0 bg-dark/95 backdrop-blur-xl z-50 flex flex-col items-center justify-center hidden-section">
-        <div class="relative flex items-center justify-center mb-6">
-            <div class="absolute w-20 h-20 rounded-full border border-neon/20 animate-ping"></div>
-            <div class="loader-spinner"></div>
-        </div>
-        <div class="font-sci text-neon tracking-[0.2em] text-sm sm:text-base animate-pulse text-center px-4 font-bold" id="loader-text">ESTABLISHING UPLINK...</div>
+<!-- ══ Nebula blobs ══ -->
+<div class="nebula n1"></div>
+<div class="nebula n2"></div>
+<div class="nebula n3"></div>
+
+<!-- ══ Toast ══ -->
+<div id="toast-container"></div>
+
+<!-- ══ Loader ══ -->
+<div id="loader-overlay">
+  <div class="spinner-ring"></div>
+  <div class="loader-text" id="loader-text">Establishing Uplink...</div>
+</div>
+
+<!-- ══ Anti-Cheat Screen ══ -->
+<div id="blur-warning">
+  <div class="blur-icon">
+    <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+  </div>
+  <div>
+    <div class="font-display" style="font-size:26px;font-weight:800;color:var(--danger);letter-spacing:-0.01em;">Focus Lost</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6;">Return to the terminal.<br><span style="font-size:10px;opacity:0.6;">AI overlays, screen recording and app switching are prohibited.</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     1. LOGIN
+══════════════════════════════════════════ -->
+<main id="login-section" class="section card active">
+  <div style="text-align:center;display:flex;flex-direction:column;align-items:center;">
+    <div class="logo-badge">
+      <div class="logo-dot"></div>
+      MCQ Assessment Portal
     </div>
+    <div class="logo-title">AeroQuest</div>
+    <div class="logo-sub">Candidate Authentication</div>
+  </div>
 
-    <!-- 🚫 Anti-Cheat Blackout Screen -->
-    <div id="blur-warning" class="fixed inset-0 bg-dark/98 z-[9999] flex flex-col items-center justify-center hidden-section backdrop-blur-md p-6">
-        <svg class="w-20 h-20 text-danger animate-pulse mb-6 drop-shadow-[0_0_20px_rgba(255,42,42,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-        </svg>
-        <h2 class="font-sci text-3xl sm:text-4xl text-danger tracking-[0.15em] uppercase font-black text-center">Focus Lost</h2>
-        <div class="w-12 h-1 bg-danger/50 rounded-full my-4"></div>
-        <p class="text-slate-300 text-center max-w-sm leading-relaxed text-sm font-medium">Return to the terminal immediately.<br><span class="text-slate-500 text-xs mt-2 block">AI overlays, screen recording, and app switching are strictly prohibited.</span></p>
+  <form id="login-form" class="form-section">
+    <label class="field-label" for="roll-input">Identification Roll Number</label>
+    <input
+      type="text" id="roll-input" required
+      autocomplete="off" placeholder="e.g. 25U201"
+      class="field-input"
+    >
+
+    <button type="submit" class="btn-primary">
+      <span class="btn-icon">⚡</span>
+      Initiate Sequence
+    </button>
+
+    <div class="warning-strip">
+      <span>⚠️</span>
+      <span>Device will be locked to this session. Tab switching will result in penalties.</span>
     </div>
+  </form>
 
-    <!-- ================== 1. LOGIN SECTION ================== -->
-    <!-- Beautiful Glass Frame styling ensuring it fits beautifully on all devices -->
-    <main id="login-section" class="w-11/12 max-w-sm glass-panel rounded-[2rem] p-6 sm:p-8 flex flex-col justify-center transition-all duration-500 relative mx-auto shadow-2xl mt-auto mb-auto">
-        
-        <div class="text-center mb-8 flex flex-col items-center w-full">
-            <div class="inline-flex items-center gap-2 px-3 py-1.5 mb-5 rounded-full border border-neon/30 text-neon text-[10px] sm:text-xs font-sci tracking-widest uppercase shadow-[0_0_15px_rgba(0,240,255,0.1)] bg-neon/5">
-                <span class="w-1.5 h-1.5 rounded-full bg-neon animate-pulse"></span>
-                MCQ Assessment Portal
-            </div>
-            <!-- FIXED: Dynamic text sizing allows title to fit completely on small screens -->
-            <h1 class="font-sci text-3xl min-[375px]:text-4xl sm:text-5xl neon-text tracking-widest font-black uppercase drop-shadow-lg leading-none w-full text-center">AEROQUEST</h1>
-            <p class="text-slate-400 text-[10px] sm:text-xs tracking-[0.2em] uppercase font-bold mt-4">Candidate Authentication</p>
+  <div class="login-footer">
+    <svg width="14" height="14" fill="none" stroke="var(--accent)" viewBox="0 0 24 24" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+    </svg>
+    <span>End-to-End Encryption Active</span>
+  </div>
+</main>
+
+<!-- ══════════════════════════════════════════
+     2. QUIZ
+══════════════════════════════════════════ -->
+<main id="quiz-section" class="section">
+  <!-- Header -->
+  <header class="quiz-header">
+    <div class="candidate-block">
+      <div class="candidate-label">Candidate</div>
+      <div class="candidate-id">
+        <div class="status-dot"></div>
+        <span class="candidate-roll font-mono" id="display-roll">---</span>
+      </div>
+    </div>
+    <div class="timer-block">
+      <div class="timer-label">Time Left</div>
+      <div class="timer-value font-mono" id="timer-display">10:00</div>
+    </div>
+  </header>
+
+  <!-- Progress -->
+  <div class="progress-track">
+    <div class="progress-meta">
+      <span id="question-counter">Question 1 / X</span>
+      <span class="pct" id="completion-percent">0% Answered</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- Scrollable Question + Options -->
+  <div class="question-scroll" id="question-scroll">
+    <div class="question-card">
+      <div class="q-num" id="q-num-label">Q 01</div>
+      <img id="question-image" src="" alt="" class="q-image" style="display:none;">
+      <p id="question-text" class="q-text">Loading telemetry data...</p>
+    </div>
+    <div class="options-list" id="options-container"></div>
+  </div>
+
+  <!-- Footer Nav -->
+  <footer class="quiz-footer">
+    <button class="btn-nav" id="btn-prev">← Prev</button>
+    <button class="btn-nav btn-next-hi" id="btn-next">Next →</button>
+    <button class="btn-submit" id="btn-submit" style="display:none;" disabled>
+      ✦ Transmit
+    </button>
+  </footer>
+</main>
+
+<!-- ══════════════════════════════════════════
+     3. RESULT
+══════════════════════════════════════════ -->
+<main id="result-section" class="section card">
+  <div class="result-icon">
+    <svg width="34" height="34" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+    </svg>
+  </div>
+  <div class="result-title font-display">Simulation<br>Complete</div>
+  <div class="result-sub">Data Encrypted &amp; Transmitted</div>
+
+  <div class="score-panel">
+    <div class="score-label">Final Score</div>
+    <div>
+      <span class="score-value" id="score-display">0</span>
+      <span class="score-total"> / <span id="total-display">0</span></span>
+    </div>
+    <div class="score-divider"></div>
+    <div class="score-msg" id="score-message"></div>
+  </div>
+
+  <button class="btn-end" onclick="window.location.reload()">
+    <span>✕</span>
+    Terminate Session
+  </button>
+</main>
+
+<!-- ══════════════════════════════════════════
+     4. LOCKED
+══════════════════════════════════════════ -->
+<main id="locked-section" class="section card">
+  <div class="lock-icon">
+    <svg width="32" height="32" fill="none" stroke="var(--danger)" viewBox="0 0 24 24" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
+    </svg>
+  </div>
+  <div class="lock-title font-display">Session Locked</div>
+  <div class="lock-sub">Critical security violations detected.<br>Protocol terminated.</div>
+
+  <div class="violation-log">
+    <span class="violation-log-label">⬡ Violation Log</span>
+    <p class="violation-log-text" id="lock-reason-text">Multiple security events.</p>
+  </div>
+
+  <div class="override-panel">
+    <span class="override-label">Override Required</span>
+    <span class="override-value">Call Admin</span>
+  </div>
+</main>
+
+<!-- ══════════════════════════════════════════
+     APPLICATION LOGIC
+══════════════════════════════════════════ -->
+<script>
+/* ══ CONFIGURATION ══ */
+const API_URL = "https://script.google.com/macros/s/AKfycbwKC5RH5r5HeoaIga02TCAVPoo3Kk9tIJfHo6p17eUxhCMEZ54-kDSjZ-cRyFbNwIPZ/exec";
+
+let state = {
+  rollNo: '', questions: [], answers: {},
+  currentIndex: 0, timeLeft: 0, timerInterval: null,
+  isSubmitting: false, tabSwitches: 0, violationReason: ''
+};
+
+let preloadedQuestionsData = null;
+
+const $ = id => document.getElementById(id);
+const sections = {
+  login:  $('login-section'),
+  quiz:   $('quiz-section'),
+  result: $('result-section'),
+  locked: $('locked-section'),
+};
+
+/* ══ STARFIELD ══ */
+(function() {
+  const canvas = $('starfield');
+  const ctx = canvas.getContext('2d');
+  const stars = [];
+  let W, H;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < 180; i++) {
+    stars.push({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.3,
+      o: Math.random() * 0.6 + 0.1,
+      s: Math.random() * 0.0005 + 0.0001,
+      d: Math.random() * Math.PI * 2,
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    stars.forEach(s => {
+      s.d += s.s;
+      const flicker = Math.sin(s.d) * 0.15;
+      ctx.beginPath();
+      ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180,210,255,${s.o + flicker})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ══ API ══ */
+async function apiCall(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, ...payload })
+  });
+  if (!res.ok) throw new Error('Network error. Check connection.');
+  return res.json();
+}
+
+/* Preload questions silently */
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const d = await apiCall('getQuestions');
+    if (d.success && d.questions) preloadedQuestionsData = d.questions;
+  } catch(e) {}
+});
+
+/* ══ LOGIN ══ */
+$('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const rollNo = $('roll-input').value.trim().toUpperCase();
+  if (!rollNo) return;
+  $('roll-input').blur();
+  requestFullscreen();
+  showLoader('Authenticating Identity...');
+  try {
+    const res = await apiCall('login', { roll_no: rollNo });
+    if (res.success) {
+      state.rollNo = rollNo;
+      $('display-roll').textContent = rollNo;
+      recoverState(res.time || 10);
+      showToast('Authentication Successful', 'success');
+      const qs = preloadedQuestionsData || (await apiCall('getQuestions')).questions;
+      if (!qs) throw new Error('No modules found.');
+      processQuizData(qs);
+    } else {
+      showToast(res.message || 'Access Denied.', 'error');
+      hideLoader();
+    }
+  } catch(err) {
+    showToast(err.message, 'error');
+    hideLoader();
+  }
+});
+
+/* ══ QUIZ SETUP ══ */
+function processQuizData(arr) {
+  state.questions = shuffleArray([...arr]);
+  state.questions.forEach(q => {
+    const opts = [
+      { id:'A', text:q.optionA },
+      { id:'B', text:q.optionB },
+      { id:'C', text:q.optionC },
+      { id:'D', text:q.optionD },
+    ].filter(o => o.text && String(o.text).trim());
+    q.shuffledOptions = shuffleArray(opts);
+  });
+  hideLoader();
+  switchSection('quiz');
+  startTimer();
+  renderQuestion();
+}
+
+/* ══ RENDER ══ */
+function renderQuestion() {
+  const q = state.questions[state.currentIndex];
+  const total = state.questions.length;
+  const num = state.currentIndex + 1;
+
+  $('question-counter').textContent = `Question ${num} / ${total}`;
+  const pct = Math.round((num - 1) / total * 100);
+  $('completion-percent').textContent = `${pct}% Answered`;
+  $('progress-fill').style.width = `${pct}%`;
+
+  $('q-num-label').textContent = `Q ${String(num).padStart(2,'0')}`;
+  $('question-text').textContent = q.question;
+
+  const img = $('question-image');
+  if (q.image && q.image.trim()) {
+    img.src = q.image.trim(); img.style.display = '';
+  } else {
+    img.src = ''; img.style.display = 'none';
+  }
+
+  const container = $('options-container');
+  container.innerHTML = '';
+  q.shuffledOptions.forEach(opt => {
+    const checked = state.answers[q.id] === opt.id ? 'checked' : '';
+    container.insertAdjacentHTML('beforeend', `
+      <label class="option-item">
+        <input type="radio" name="q_${q.id}" value="${opt.id}" ${checked}
+          onchange="selectAnswer('${q.id}','${opt.id}')">
+        <div class="option-box">
+          <div class="option-radio"><div class="option-radio-dot"></div></div>
+          <span class="option-text">${opt.text}</span>
         </div>
+      </label>
+    `);
+  });
 
-        <form id="login-form" class="space-y-6 w-full">
-            <div class="flex flex-col">
-                <label class="text-slate-400 text-[10px] tracking-[0.15em] uppercase mb-2 ml-1 font-bold text-center">Identification Roll Number</label>
-                <input type="text" id="roll-input" required autocomplete="off" placeholder="E.G. 25U201" 
-                       class="input-sci w-full px-5 py-4 font-sci uppercase placeholder-slate-700 text-center tracking-[0.2em] font-bold text-lg">
-            </div>
-            
-            <button type="submit" class="w-full py-4 border border-neon text-neon rounded-xl font-sci font-bold text-base sm:text-lg flex justify-center items-center gap-3 transition-all active:scale-95 bg-transparent hover:bg-neon/10 shadow-[0_0_15px_rgba(0,240,255,0.1)]">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                INITIATE SEQUENCE
-            </button>
-            
-            <div class="border border-danger/40 bg-danger/10 rounded-xl p-3 flex justify-center items-center gap-2 w-full mx-auto">
-                <span class="text-yellow-500 text-xs drop-shadow-md shrink-0">⚠️</span>
-                <p class="text-[9px] sm:text-[10px] text-danger uppercase tracking-[0.1em] font-bold text-center leading-tight">Device will be locked to this session</p>
-            </div>
-        </form>
-        
-        <div class="mt-8 text-center border-t border-slate-700/50 pt-5 w-full opacity-70">
-            <p class="text-[9px] text-slate-400 flex items-center justify-center gap-2 uppercase tracking-[0.15em] font-semibold">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                End-to-End Encryption Active
-            </p>
-        </div>
-    </main>
+  $('question-scroll').scrollTop = 0;
 
-    <!-- ================== 2. QUIZ SECTION ================== -->
-    <main id="quiz-section" class="w-full max-w-xl h-[100dvh] hidden-section flex flex-col pt-safe pb-safe px-4 sm:px-6 relative overflow-hidden bg-dark/40 backdrop-blur-sm">
-        
-        <!-- Header (Fixed) -->
-        <header class="flex justify-between items-center border-b border-slate-800 pb-3 mt-4 shrink-0">
-            <div class="flex flex-col gap-1">
-                <p class="text-[9px] text-slate-400 uppercase tracking-[0.15em] font-bold">Candidate</p>
-                <div class="flex items-center gap-2">
-                    <div class="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_5px_#00ffaa]"></div>
-                    <h2 id="display-roll" class="font-sci text-xl sm:text-2xl text-white font-bold tracking-widest">---</h2>
-                </div>
-            </div>
-            <div class="text-center px-4 py-2 rounded-xl border border-slate-700 bg-slate-900/50 flex flex-col justify-center min-w-[110px]">
-                <p class="text-[9px] text-neon uppercase tracking-[0.2em] mb-0.5 font-bold">Time Left</p>
-                <div id="timer-display" class="font-sci text-2xl sm:text-3xl neon-text tabular-nums leading-none font-bold tracking-wider">10:00</div>
-            </div>
-        </header>
+  // Prev button
+  const btnPrev = $('btn-prev');
+  btnPrev.disabled = state.currentIndex === 0;
 
-        <!-- Progress Bar (Fixed) -->
-        <div class="my-4 shrink-0">
-            <div class="flex justify-between text-[10px] sm:text-xs font-sci mb-2 font-bold tracking-[0.1em] uppercase">
-                <span id="question-counter" class="text-slate-400">Question 1 / X</span>
-                <span id="completion-percent" class="text-neon">0% Answered</span>
-            </div>
-            <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                <div id="progress-fill" class="h-full bg-neon shadow-[0_0_10px_#00f0ff] w-0 transition-all duration-300"></div>
-            </div>
-        </div>
+  // Next / Submit toggle
+  const btnNext   = $('btn-next');
+  const btnSubmit = $('btn-submit');
+  if (state.currentIndex === total - 1) {
+    btnNext.style.display = 'none';
+    btnSubmit.style.display = '';
+  } else {
+    btnNext.style.display = '';
+    btnSubmit.style.display = 'none';
+  }
+  checkSubmit();
+}
 
-        <!-- Question & Options Area -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4 min-h-0 relative scroll-smooth flex flex-col">
-            
-            <div class="bg-slate-900/60 p-5 rounded-2xl border-l-4 border-l-neon mb-6 shrink-0 shadow-lg">
-                <!-- Optional Dynamic Image -->
-                <img id="question-image" src="" alt="Question Media" class="hidden-section w-full max-h-56 sm:max-h-64 object-contain rounded-xl mb-4 border border-slate-700/50 bg-black/40">
-                <h3 id="question-text" class="text-[17px] sm:text-xl font-medium leading-relaxed text-slate-100 tracking-wide font-body">
-                    Loading telemetry data...
-                </h3>
-            </div>
+window.selectAnswer = function(qId, val) {
+  state.answers[qId] = val;
+  saveState();
+  checkSubmit();
+};
 
-            <div id="options-container" class="flex flex-col gap-3 pb-2 shrink-0">
-                <!-- Options injected via JS -->
-            </div>
-        </div>
+$('btn-next').addEventListener('click', () => {
+  if (state.currentIndex < state.questions.length - 1) { state.currentIndex++; renderQuestion(); }
+});
+$('btn-prev').addEventListener('click', () => {
+  if (state.currentIndex > 0) { state.currentIndex--; renderQuestion(); }
+});
 
-        <!-- Navigation Footer -->
-        <footer class="pt-4 border-t border-slate-800 flex w-full gap-3 shrink-0 bg-dark/80 backdrop-blur-md pb-2 mt-auto">
-            <button id="btn-prev" class="border border-slate-700 text-slate-400 bg-slate-900/50 px-3 py-4 rounded-xl text-sm flex-1 flex items-center justify-center font-bold tracking-widest uppercase transition-all active:scale-95 whitespace-nowrap shadow-sm">
-                &larr; PREV
-            </button>
-            
-            <button id="btn-next" class="border border-neon/50 text-neon bg-neon/5 px-3 py-4 rounded-xl text-sm flex-1 flex items-center justify-center font-bold tracking-widest uppercase transition-all active:scale-95 whitespace-nowrap shadow-[0_0_10px_rgba(0,240,255,0.1)]">
-                NEXT &rarr;
-            </button>
-            
-            <button id="btn-submit" class="hidden-section bg-neon text-dark px-4 py-4 rounded-xl text-sm sm:text-base font-sci font-bold uppercase tracking-widest transition-all active:scale-95 flex-[2] flex items-center justify-center whitespace-nowrap shadow-[0_0_20px_rgba(0,240,255,0.5)]">
-                Transmit Data
-            </button>
-        </footer>
-    </main>
+function checkSubmit() {
+  const answered = Object.keys(state.answers).length;
+  const total = state.questions.length;
+  const pct = Math.round(answered / total * 100);
+  $('completion-percent').textContent = `${pct}% Answered`;
+  $('progress-fill').style.width = `${pct}%`;
 
-    <!-- ================== 3. RESULT SECTION ================== -->
-    <main id="result-section" class="w-11/12 max-w-sm glass-panel rounded-[2rem] p-6 sm:p-8 flex flex-col justify-center text-center hidden-section relative mx-auto shadow-2xl mt-auto mb-auto">
-        <div class="mb-8 relative z-10">
-            <div class="w-20 h-20 mx-auto bg-success/10 rounded-full flex items-center justify-center mb-5 border border-success/40 shadow-[0_0_30px_rgba(0,255,170,0.2)]">
-                <svg class="w-10 h-10 text-success drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>
-            <h2 class="font-sci text-3xl text-white tracking-[0.1em] uppercase font-black drop-shadow-lg leading-tight w-full">Simulation<br>Complete</h2>
-            <p class="text-slate-400 mt-2 text-xs font-medium uppercase tracking-widest">Data Encrypted & Transmitted</p>
-        </div>
+  const btn = $('btn-submit');
+  if (answered === total) {
+    btn.disabled = false;
+    btn.classList.add('pulse');
+  } else {
+    btn.disabled = true;
+    btn.classList.remove('pulse');
+  }
+}
 
-        <div class="border border-neon/30 rounded-2xl p-6 mb-8 bg-slate-900/60 shadow-inner relative z-10 w-full">
-            <p class="text-[10px] text-slate-400 uppercase tracking-[0.2em] mb-1 font-bold">Final Score</p>
-            <div class="font-sci text-5xl neon-text mb-2 font-black drop-shadow-xl tracking-wider flex items-baseline justify-center">
-                <span id="score-display">0</span><span class="text-2xl text-slate-600 font-bold ml-1">/<span id="total-display">0</span></span>
-            </div>
-            <div class="w-12 h-1 bg-neon/40 rounded-full mx-auto my-3"></div>
-            <p id="score-message" class="text-xs text-slate-200 mt-2 font-medium leading-relaxed"></p>
-        </div>
+$('btn-submit').addEventListener('click', () => submitQuiz(false));
 
-        <button onclick="window.location.reload()" class="mt-auto border border-neon/50 text-neon w-full py-4 rounded-xl text-sm font-bold tracking-[0.2em] transition-all active:scale-95 uppercase bg-neon/5 shadow-[0_0_15px_rgba(0,240,255,0.1)] flex justify-center">
-            Terminate Session
-        </button>
-    </main>
+/* ══ SUBMIT ══ */
+async function submitQuiz(isAuto = false, isCheat = false, cheatReason = '') {
+  if (state.isSubmitting) return;
+  state.isSubmitting = true;
+  clearInterval(state.timerInterval);
 
-    <!-- ================== 4. LOCKED SECTION (ANTI-CHEAT) ================== -->
-    <main id="locked-section" class="w-11/12 max-w-sm glass-panel border-2 border-danger shadow-[0_0_50px_rgba(255,42,42,0.3)] rounded-[2rem] p-6 sm:p-8 flex flex-col justify-center text-center hidden-section relative mx-auto mt-auto mb-auto">
-        <div class="absolute inset-0 bg-danger/5 pointer-events-none rounded-[2rem]"></div>
-        
-        <div class="mb-6 relative z-10 w-full flex flex-col items-center">
-            <div class="w-16 h-16 sm:w-20 sm:h-20 bg-danger/10 rounded-full flex items-center justify-center mb-5 border border-danger/40 shadow-[0_0_30px_rgba(255,42,42,0.3)]">
-                <svg class="w-8 h-8 sm:w-10 sm:h-10 text-danger animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path>
-                </svg>
-            </div>
-            <h2 class="font-sci text-2xl sm:text-3xl text-danger tracking-[0.1em] uppercase font-black mb-2 drop-shadow-md w-full">Session Locked</h2>
-            <p class="text-slate-300 mt-2 text-[11px] sm:text-xs leading-relaxed font-medium">Critical security violations detected. Protocol terminated.</p>
-            
-            <div class="mt-6 p-4 bg-slate-900/80 border border-danger/30 rounded-xl text-left shadow-inner w-full">
-                <p class="text-[9px] text-danger uppercase tracking-[0.2em] mb-2 font-bold flex items-center gap-1">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Violation Log:
-                </p>
-                <p id="lock-reason-text" class="text-slate-200 text-[11px] sm:text-xs font-medium tracking-wide leading-relaxed border-l-2 border-danger pl-3"></p>
-            </div>
-        </div>
+  if (isCheat) state.answers = {};
+  else if (isAuto) showToast('Time Expired — Auto-submitting...', 'warning');
 
-        <div class="mt-4 p-4 sm:p-5 border border-danger/30 rounded-xl bg-danger/10 relative z-10 w-full shadow-[0_0_20px_rgba(255,42,42,0.15)] flex flex-col items-center">
-            <p class="text-white/80 font-sci tracking-[0.15em] text-[9px] sm:text-[10px] font-semibold">OVERRIDE REQUIRED</p>
-            <p class="text-white font-sci text-xl sm:text-2xl mt-1 font-black tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">CALL ADMIN</p>
-        </div>
-    </main>
+  showLoader('Transmitting...');
+  try {
+    const res = await apiCall('submit', { roll_no: state.rollNo, answers: state.answers });
+    if (res.success) {
+      localStorage.removeItem(`aq_${state.rollNo}`);
+      hideLoader(); exitFullscreen();
+      if (isCheat) {
+        $('lock-reason-text').textContent = cheatReason || state.violationReason || 'Multiple security events.';
+        switchSection('locked');
+      } else {
+        const score = res.score ?? 0;
+        const tot   = res.total || state.questions.length;
+        $('score-display').textContent = score;
+        $('total-display').textContent = tot;
+        const ratio = score / tot;
+        if (ratio >= 0.8)     $('score-message').innerHTML = `Outstanding. <span style="color:var(--accent2);font-weight:600;">Cleared for Advanced Operations.</span>`;
+        else if (ratio >= 0.5) $('score-message').innerHTML = `Standard parameters met. Cleared for basic duty.`;
+        else                  $('score-message').innerHTML = `<span style="color:var(--danger);font-weight:600;">Parameters failed. Remedial training required.</span>`;
+        switchSection('result');
+      }
+    } else throw new Error(res.message || 'Transmission failed.');
+  } catch(err) {
+    showToast(err.message, 'error');
+    state.isSubmitting = false;
+    hideLoader();
+  }
+}
 
-    <!-- ================== APPLICATION LOGIC ================== -->
-    <script>
-        /**
-         * ⚙️ CONFIGURATION & STATE
-         */
-        const API_URL = "https://script.google.com/macros/s/AKfycbwKC5RH5r5HeoaIga02TCAVPoo3Kk9tIJfHo6p17eUxhCMEZ54-kDSjZ-cRyFbNwIPZ/exec"; 
-        
-        let state = {
-            rollNo: '',
-            questions: [],
-            answers: {},
-            currentIndex: 0,
-            timeLeft: 0,
-            timerInterval: null,
-            isSubmitting: false,
-            tabSwitches: 0,
-            violationReason: ''
-        };
+/* ══ TIMER ══ */
+function startTimer() {
+  updateTimerUI();
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    saveState();
+    updateTimerUI();
+    if (state.timeLeft <= 0) { clearInterval(state.timerInterval); submitQuiz(true); }
+    else if (state.timeLeft === 60) {
+      showToast('⚠ 60 seconds remaining!', 'warning');
+      $('timer-display').classList.add('danger');
+    }
+  }, 1000);
+}
 
-        let preloadedQuestionsData = null;
+function updateTimerUI() {
+  const m = Math.floor(state.timeLeft / 60);
+  const s = state.timeLeft % 60;
+  $('timer-display').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
 
-        const el = {
-            sections: {
-                login: document.getElementById('login-section'),
-                quiz: document.getElementById('quiz-section'),
-                result: document.getElementById('result-section'),
-                locked: document.getElementById('locked-section')
-            },
-            blurWarning: document.getElementById('blur-warning'),
-            loginForm: document.getElementById('login-form'),
-            rollInput: document.getElementById('roll-input'),
-            loader: document.getElementById('loader-overlay'),
-            loaderText: document.getElementById('loader-text'),
-            toastContainer: document.getElementById('toast-container'),
-            displayRoll: document.getElementById('display-roll'),
-            timerDisplay: document.getElementById('timer-display'),
-            questionCounter: document.getElementById('question-counter'),
-            completionPercent: document.getElementById('completion-percent'),
-            progressFill: document.getElementById('progress-fill'),
-            questionText: document.getElementById('question-text'),
-            questionImage: document.getElementById('question-image'),
-            optionsContainer: document.getElementById('options-container'),
-            btnPrev: document.getElementById('btn-prev'),
-            btnNext: document.getElementById('btn-next'),
-            btnSubmit: document.getElementById('btn-submit'),
-            scoreDisplay: document.getElementById('score-display'),
-            totalDisplay: document.getElementById('total-display'),
-            scoreMessage: document.getElementById('score-message'),
-            lockReasonText: document.getElementById('lock-reason-text')
-        };
+/* ══ PERSISTENCE ══ */
+function saveState() {
+  if (!state.rollNo) return;
+  localStorage.setItem(`aq_${state.rollNo}`, JSON.stringify({
+    answers: state.answers, timeLeft: state.timeLeft,
+    tabSwitches: state.tabSwitches, violationReason: state.violationReason
+  }));
+}
 
-        /**
-         * 🌐 API COMMUNICATION
-         */
-        async function apiCall(action, payload = {}) {
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action, ...payload })
-                });
-                if (!response.ok) throw new Error('Network response was not ok');
-                return await response.json();
-            } catch (error) {
-                console.error("API Error:", error);
-                throw new Error("Connection to mainframe failed. Check network integrity.");
-            }
-        }
+function recoverState(defMin) {
+  const raw = localStorage.getItem(`aq_${state.rollNo}`);
+  if (raw) {
+    try {
+      const p = JSON.parse(raw);
+      state.answers        = p.answers        || {};
+      state.tabSwitches    = p.tabSwitches    || 0;
+      state.violationReason= p.violationReason|| '';
+      state.timeLeft       = (p.timeLeft > 0) ? p.timeLeft : defMin * 60;
+      return;
+    } catch(e) {}
+  }
+  state.timeLeft = defMin * 60;
+}
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const data = await apiCall('getQuestions');
-                if (data.success && data.questions) {
-                    preloadedQuestionsData = data.questions;
-                    console.log("[SYSTEM] Telemetry pre-loaded.");
-                }
-            } catch (e) {
-                console.log("[SYSTEM] Pre-load offline. Awaiting manual trigger.");
-            }
-        });
+/* ══ ANTI-CHEAT ══ */
+document.addEventListener('contextmenu', e => e.preventDefault());
+['copy','cut','paste','dragstart','drop'].forEach(ev =>
+  document.addEventListener(ev, e => { e.preventDefault(); return false; })
+);
+document.addEventListener('selectstart', e => {
+  if (e.target.tagName !== 'INPUT') { e.preventDefault(); return false; }
+});
 
-        /**
-         * 🚀 CORE LOGIC
-         */
-        el.loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const rollNo = el.rollInput.value.trim().toUpperCase();
-            if (!rollNo) return;
+let lastViolation = 0;
 
-            requestFullscreen();
-            showLoader("AUTHENTICATING IDENTITY...");
-            
-            // Hide mobile keyboard smoothly
-            el.rollInput.blur(); 
-            
-            try {
-                const loginRes = await apiCall('login', { roll_no: rollNo });
-                
-                if (loginRes.success) {
-                    state.rollNo = rollNo;
-                    el.displayRoll.textContent = rollNo;
-                    recoverState(loginRes.time || 10);
-                    showToast("Authentication Successful", "success");
+function handleViolation(reason) {
+  if (state.isSubmitting || !sections.quiz.classList.contains('active')) return;
+  const now = Date.now();
+  if (now - lastViolation < 1500) return;
+  lastViolation = now;
+  state.tabSwitches++;
+  state.violationReason = reason;
+  saveState();
+  if (state.tabSwitches >= 3) {
+    submitQuiz(false, true, reason);
+  } else {
+    const left = 3 - state.tabSwitches;
+    showToast(`Security Alert — ${left} strike(s) remaining`, 'error');
+  }
+}
 
-                    if (preloadedQuestionsData) {
-                        processQuizData(preloadedQuestionsData);
-                    } else {
-                        el.loaderText.textContent = "DOWNLOADING MODULES...";
-                        const data = await apiCall('getQuestions');
-                        if (data.success && data.questions) {
-                            processQuizData(data.questions);
-                        } else {
-                            throw new Error("No modules found.");
-                        }
-                    }
-                } else {
-                    showToast(loginRes.message || "Access Denied.", "error");
-                    hideLoader();
-                }
-            } catch (error) {
-                showToast(error.message, "error");
-                hideLoader();
-            }
-        });
+const blurEl = $('blur-warning');
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    if (!state.isSubmitting && sections.quiz.classList.contains('active')) {
+      sections.quiz.style.visibility = 'hidden';
+      blurEl.classList.add('active');
+    }
+    handleViolation('Application backgrounded or tab switched.');
+  } else {
+    if (state.tabSwitches < 3) {
+      sections.quiz.style.visibility = '';
+      blurEl.classList.remove('active');
+    }
+  }
+});
 
-        function processQuizData(questionsArray) {
-            state.questions = shuffleArray([...questionsArray]);
-            
-            state.questions.forEach(q => {
-                let opts = [
-                    { id: 'A', text: q.optionA },
-                    { id: 'B', text: q.optionB },
-                    { id: 'C', text: q.optionC },
-                    { id: 'D', text: q.optionD }
-                ].filter(opt => opt.text && opt.text.toString().trim() !== "");
-                q.shuffledOptions = shuffleArray(opts);
-            });
-            
-            hideLoader();
-            switchSection('quiz');
-            startTimer();
-            renderQuestion();
-        }
+window.addEventListener('blur', () => {
+  if (!state.isSubmitting && sections.quiz.classList.contains('active')) {
+    sections.quiz.style.visibility = 'hidden';
+    blurEl.classList.add('active');
+  }
+  handleViolation('Focus lost — possible screen capture or overlay detected.');
+});
 
-        function renderQuestion() {
-            const q = state.questions[state.currentIndex];
-            const total = state.questions.length;
-            
-            el.questionCounter.textContent = `Question ${state.currentIndex + 1} / ${total}`;
-            const percent = Math.round(((state.currentIndex) / total) * 100);
-            el.completionPercent.textContent = `${percent}% Answered`;
-            el.progressFill.style.width = `${percent}%`;
-            el.questionText.textContent = q.question;
+window.addEventListener('focus', () => {
+  if (state.tabSwitches < 3) {
+    sections.quiz.style.visibility = '';
+    blurEl.classList.remove('active');
+  }
+});
 
-            if (q.image && q.image.trim() !== "") {
-                el.questionImage.src = q.image.trim();
-                el.questionImage.classList.remove('hidden-section');
-            } else {
-                el.questionImage.src = "";
-                el.questionImage.classList.add('hidden-section');
-            }
-            
-            el.optionsContainer.innerHTML = '';
-            
-            q.shuffledOptions.forEach(opt => {
-                const isChecked = state.answers[q.id] === opt.id ? 'checked' : '';
-                const optHTML = `
-                    <label class="option-label group pointer-events-auto block w-full">
-                        <input type="radio" name="question_${q.id}" value="${opt.id}" class="option-input hidden" ${isChecked} onchange="handleAnswerSelection('${q.id}', '${opt.id}')">
-                        <div class="option-box px-4 py-4 min-h-[64px] flex items-center gap-4 w-full">
-                            <div class="option-indicator-outer w-5 h-5 shrink-0 rounded-full flex items-center justify-center">
-                                <div class="option-indicator-inner w-2.5 h-2.5 rounded-full"></div>
-                            </div>
-                            <span class="text-slate-200 text-base leading-snug font-medium w-full">${opt.text}</span>
-                        </div>
-                    </label>
-                `;
-                el.optionsContainer.insertAdjacentHTML('beforeend', optHTML);
-            });
+window.addEventListener('beforeunload', e => {
+  if (!state.isSubmitting && state.rollNo &&
+      !sections.result.classList.contains('active') &&
+      !sections.locked.classList.contains('active')) {
+    e.preventDefault(); e.returnValue = '';
+  }
+});
 
-            el.optionsContainer.parentElement.scrollTop = 0;
+/* ══ UTILITIES ══ */
+function switchSection(id) {
+  Object.values(sections).forEach(s => s.classList.remove('active'));
+  blurEl.classList.remove('active');
+  sections[id].classList.add('active');
+  sections[id].style.opacity = '0';
+  requestAnimationFrame(() => {
+    sections[id].style.transition = 'opacity 0.4s ease';
+    sections[id].style.opacity = '1';
+  });
+}
 
-            if (state.currentIndex === 0) {
-                el.btnPrev.disabled = true;
-                el.btnPrev.classList.add('opacity-40');
-            } else {
-                el.btnPrev.disabled = false;
-                el.btnPrev.classList.remove('opacity-40');
-            }
-            
-            if (state.currentIndex === total - 1) {
-                el.btnNext.classList.add('hidden-section');
-                el.btnSubmit.classList.remove('hidden-section');
-                checkSubmitStatus();
-            } else {
-                el.btnNext.classList.remove('hidden-section');
-                el.btnSubmit.classList.add('hidden-section');
-            }
-        }
+function showLoader(msg) {
+  $('loader-text').textContent = msg;
+  $('loader-overlay').classList.add('active');
+}
+function hideLoader() { $('loader-overlay').classList.remove('active'); }
 
-        window.handleAnswerSelection = function(qId, selectedOriginalLetter) {
-            state.answers[qId] = selectedOriginalLetter;
-            saveState(); 
-            checkSubmitStatus();
-        }
+function showToast(msg, type = 'info') {
+  const container = $('toast-container');
+  const t = document.createElement('div');
+  const icon = type === 'error' ? '⚠' : type === 'success' ? '✓' : type === 'warning' ? '⏱' : 'ℹ';
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-msg">${msg}</span>`;
+  container.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('exiting');
+    setTimeout(() => t.remove(), 350);
+  }, 4500);
+}
 
-        el.btnNext.addEventListener('click', () => {
-            if (state.currentIndex < state.questions.length - 1) {
-                state.currentIndex++;
-                renderQuestion();
-            }
-        });
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
-        el.btnPrev.addEventListener('click', () => {
-            if (state.currentIndex > 0) {
-                state.currentIndex--;
-                renderQuestion();
-            }
-        });
-
-        function checkSubmitStatus() {
-            const answeredCount = Object.keys(state.answers).length;
-            const totalCount = state.questions.length;
-            const percent = Math.round((answeredCount / totalCount) * 100);
-            el.completionPercent.textContent = `${percent}% Answered`;
-            el.progressFill.style.width = `${percent}%`;
-
-            if (answeredCount === totalCount) {
-                el.btnSubmit.disabled = false;
-                el.btnSubmit.classList.add('animate-pulse');
-            } else {
-                el.btnSubmit.disabled = true;
-                el.btnSubmit.classList.remove('animate-pulse');
-            }
-        }
-
-        el.btnSubmit.addEventListener('click', () => submitQuiz(false));
-
-        async function submitQuiz(isAuto = false, isCheat = false, cheatReason = "") {
-            if (state.isSubmitting) return;
-            state.isSubmitting = true;
-            clearInterval(state.timerInterval);
-            
-            if (isCheat) {
-                state.answers = {}; 
-            } else if (isAuto) {
-                showToast("Time Expired! Auto-submitting...", "warning");
-            }
-
-            showLoader("TRANSMITTING...");
-
-            try {
-                const res = await apiCall('submit', { 
-                    roll_no: state.rollNo, 
-                    answers: state.answers 
-                });
-
-                if (res.success) {
-                    localStorage.removeItem(`aeroQuiz_${state.rollNo}`);
-                    hideLoader();
-                    exitFullscreen();
-
-                    if (isCheat) {
-                        el.lockReasonText.textContent = cheatReason || state.violationReason || "Multiple undocumented security events.";
-                        switchSection('locked');
-                    } else {
-                        el.scoreDisplay.textContent = res.score;
-                        el.totalDisplay.textContent = res.total || state.questions.length;
-                        
-                        const ratio = res.score / (res.total || state.questions.length);
-                        if (ratio >= 0.8) el.scoreMessage.innerHTML = "Outstanding Performance.<br><span class='text-neon font-bold tracking-wider mt-1 block'>Cleared for Advanced Operations.</span>";
-                        else if (ratio >= 0.5) el.scoreMessage.innerHTML = "<span class='text-slate-300'>Standard Parameters Met. Cleared for basic duty.</span>";
-                        else el.scoreMessage.innerHTML = "<span class='text-danger font-bold'>Parameters Failed. Remedial training required.</span>";
-
-                        switchSection('result');
-                    }
-                } else {
-                    throw new Error(res.message || "Transmission failed.");
-                }
-            } catch (error) {
-                showToast(error.message, "error");
-                state.isSubmitting = false; 
-                hideLoader();
-            }
-        }
-
-        /**
-         * ⏱️ TIMER
-         */
-        function startTimer() {
-            updateTimerUI();
-            state.timerInterval = setInterval(() => {
-                state.timeLeft--;
-                saveState();
-                updateTimerUI();
-
-                if (state.timeLeft <= 0) {
-                    clearInterval(state.timerInterval);
-                    submitQuiz(true);
-                } else if (state.timeLeft === 60) {
-                    showToast("WARNING: 60 SECONDS REMAINING", "warning");
-                    el.timerDisplay.classList.add('text-danger', 'animate-pulse');
-                    el.timerDisplay.classList.remove('neon-text');
-                }
-            }, 1000);
-        }
-
-        function updateTimerUI() {
-            let m = Math.floor(state.timeLeft / 60);
-            let s = state.timeLeft % 60;
-            el.timerDisplay.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        }
-
-        /**
-         * 💾 STATE MANAGEMENT
-         */
-        function saveState() {
-            if (!state.rollNo) return;
-            localStorage.setItem(`aeroQuiz_${state.rollNo}`, JSON.stringify({
-                answers: state.answers,
-                timeLeft: state.timeLeft,
-                tabSwitches: state.tabSwitches,
-                violationReason: state.violationReason
-            }));
-        }
-
-        function recoverState(defaultTime) {
-            const saved = localStorage.getItem(`aeroQuiz_${state.rollNo}`);
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    state.answers = parsed.answers || {};
-                    state.tabSwitches = parsed.tabSwitches || 0;
-                    state.violationReason = parsed.violationReason || '';
-                    state.timeLeft = parsed.timeLeft > 0 ? parsed.timeLeft : defaultTime * 60;
-                } catch(e) { state.timeLeft = defaultTime * 60; }
-            } else { state.timeLeft = defaultTime * 60; }
-        }
-
-        /**
-         * 🛡️ STRICT ANTI-CHEAT
-         */
-        document.addEventListener('contextmenu', e => e.preventDefault());
-        ['copy', 'cut', 'paste', 'dragstart', 'drop'].forEach(evt => document.addEventListener(evt, e => { e.preventDefault(); return false; }));
-        document.addEventListener('selectstart', e => { if (e.target.tagName !== 'INPUT') { e.preventDefault(); return false; } });
-
-        let lastViolationTime = 0;
-
-        function handleSecurityViolation(reason) {
-            if (state.isSubmitting || el.sections.quiz.classList.contains('hidden-section')) return;
-            
-            const now = Date.now();
-            if (now - lastViolationTime < 1500) return; 
-            lastViolationTime = now;
-            
-            state.tabSwitches++;
-            state.violationReason = reason;
-            saveState();
-            
-            if (state.tabSwitches >= 3) {
-                submitQuiz(false, true, reason);
-            } else {
-                const warningsLeft = 3 - state.tabSwitches;
-                showToast(`SECURITY ALERT: ${reason} <br><span class="text-white font-bold mt-1 block">${warningsLeft} STRIKE(S) REMAINING</span>`, "error");
-            }
-        }
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                if (!state.isSubmitting && !el.sections.quiz.classList.contains('hidden-section')) {
-                    el.sections.quiz.style.visibility = 'hidden'; 
-                    el.blurWarning.classList.remove('hidden-section');
-                }
-                handleSecurityViolation("Application backgrounded or tab switched.");
-            } else {
-                if (state.tabSwitches < 3) {
-                    el.sections.quiz.style.visibility = 'visible';
-                    el.blurWarning.classList.add('hidden-section');
-                }
-            }
-        });
-
-        window.addEventListener('blur', () => {
-            if (!state.isSubmitting && !el.sections.quiz.classList.contains('hidden-section')) {
-                el.sections.quiz.style.visibility = 'hidden'; 
-                el.blurWarning.classList.remove('hidden-section');
-            }
-            handleSecurityViolation("Focus lost (Screen capture, AI overlay, or notifications).");
-        });
-
-        window.addEventListener('focus', () => {
-            if (state.tabSwitches < 3) {
-                el.sections.quiz.style.visibility = 'visible';
-                el.blurWarning.classList.add('hidden-section');
-            }
-        });
-
-        window.addEventListener('beforeunload', (e) => {
-            if (!state.isSubmitting && state.rollNo && el.sections.result.classList.contains('hidden-section') && el.sections.locked.classList.contains('hidden-section')) {
-                e.preventDefault(); e.returnValue = '';
-            }
-        });
-
-        function requestFullscreen() {
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) elem.requestFullscreen().catch(()=>{});
-            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen().catch(()=>{});
-        }
-
-        function exitFullscreen() {
-            if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
-            else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(()=>{});
-        }
-
-        /**
-         * 🛠️ UTILITIES
-         */
-        function switchSection(sectionId) {
-            Object.values(el.sections).forEach(sec => sec.classList.add('hidden-section'));
-            el.sections[sectionId].classList.remove('hidden-section');
-            if (el.blurWarning) el.blurWarning.classList.add('hidden-section');
-            el.sections[sectionId].style.opacity = '0';
-            setTimeout(() => {
-                el.sections[sectionId].style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                el.sections[sectionId].style.opacity = '1';
-            }, 50);
-        }
-
-        function showLoader(text) {
-            el.loaderText.textContent = text;
-            el.loader.classList.remove('hidden-section');
-            el.toastContainer.classList.add('hidden-section');
-        }
-
-        function hideLoader() {
-            el.loader.classList.add('hidden-section');
-            el.toastContainer.classList.remove('hidden-section');
-        }
-
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            let theme = type === 'error' || type === 'warning' ? 
-                'border-danger shadow-[0_0_20px_rgba(255,42,42,0.15)] bg-slate-900 text-red-100' : 
-                type === 'success' ? 
-                'border-success shadow-[0_0_20px_rgba(0,255,170,0.15)] bg-slate-900 text-green-100' : 
-                'border-neon shadow-[0_0_20px_rgba(0,240,255,0.15)] bg-slate-900 text-cyan-100';
-
-            let iconHtml = type === 'error' || type === 'warning' ? 
-                '<span class="text-yellow-400 text-xl drop-shadow-md">⚠️</span>' : 
-                type === 'success' ? '<span class="text-success text-xl drop-shadow-md">✅</span>' : 
-                '<span class="text-neon text-xl drop-shadow-md">ℹ️</span>';
-
-            toast.className = `toast-enter border ${theme} p-3.5 sm:p-4 rounded-xl flex flex-row items-start gap-3 w-full shadow-2xl pointer-events-auto leading-tight backdrop-blur-md z-[100]`;
-            
-            toast.innerHTML = `
-                <div class="flex-shrink-0 mt-0.5">${iconHtml}</div>
-                <div class="flex-1 font-bold tracking-wide uppercase text-[10px] sm:text-xs text-white">
-                    ${message}
-                </div>
-            `;
-            
-            el.toastContainer.appendChild(toast);
-            setTimeout(() => {
-                toast.classList.replace('toast-enter', 'toast-exit');
-                setTimeout(() => toast.remove(), 400);
-            }, 4500);
-        }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-    </script>
+function requestFullscreen() {
+  const el = document.documentElement;
+  (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el);
+}
+function exitFullscreen() {
+  (document.exitFullscreen || document.webkitExitFullscreen || (() => {})).call(document);
+}
+</script>
 </body>
 </html>
