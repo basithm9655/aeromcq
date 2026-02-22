@@ -1,1383 +1,1162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#020510">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>AeroQuest — MCQ Portal</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-<style>
-/* ─────────────────────────────────────────────
-   DESIGN TOKENS
-───────────────────────────────────────────── */
-:root {
-  --bg:          #020510;
-  --surface:     rgba(8, 16, 40, 0.70);
-  --surface2:    rgba(15, 26, 60, 0.55);
-  --border:      rgba(100, 160, 255, 0.12);
-  --border-hi:   rgba(100, 160, 255, 0.4);
-  --accent:      #5b8fff;
-  --accent-glow: rgba(91, 143, 255, 0.35);
-  --accent2:     #00e5c8;
-  --accent2-glow:rgba(0, 229, 200, 0.3);
-  --danger:      #ff4d6a;
-  --danger-glow: rgba(255, 77, 106, 0.3);
-  --success:     #00e5c8;
-  --warn:        #ffb84d;
-  --text:        #d6e4ff;
-  --muted:       rgba(180, 200, 255, 0.45);
-  --safe-top:    env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --r:           20px;
-  --r-sm:        14px;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'Inter', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  height: 100dvh;
-  width: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
-  touch-action: pan-y;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-user-select: none;
-  user-select: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-input, textarea { -webkit-user-select: text !important; user-select: text !important; }
-
-/* ─────────────────────────────────────────────
-   CANVAS BACKGROUND (stars painted by JS)
-───────────────────────────────────────────── */
-#starfield {
-  position: fixed; inset: 0;
-  z-index: 0; pointer-events: none;
-}
-
-/* Nebula blobs */
-.nebula {
-  position: fixed; border-radius: 50%;
-  filter: blur(100px); pointer-events: none; z-index: 0;
-  animation: nebulaFloat 20s ease-in-out infinite alternate;
-}
-.n1 { width: 500px; height: 400px; top: -10%; left: -8%;
-      background: radial-gradient(ellipse, rgba(91,143,255,0.09) 0%, transparent 70%); }
-.n2 { width: 450px; height: 450px; bottom: -10%; right: -8%;
-      background: radial-gradient(ellipse, rgba(0,229,200,0.08) 0%, transparent 70%);
-      animation-delay: -10s; }
-.n3 { width: 300px; height: 300px; top: 40%; left: 30%;
-      background: radial-gradient(ellipse, rgba(150,91,255,0.06) 0%, transparent 70%);
-      animation-delay: -5s; }
-
-@keyframes nebulaFloat {
-  from { transform: scale(1) translate(0,0); opacity: 0.8; }
-  to   { transform: scale(1.15) translate(20px, 15px); opacity: 1; }
-}
-
-/* Scanline overlay */
-body::after {
-  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-}
-
-/* ─────────────────────────────────────────────
-   GLASS CARD
-───────────────────────────────────────────── */
-.card {
-  position: relative; z-index: 10;
-  background: var(--surface);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.04) inset,
-    0 40px 80px -20px rgba(0,0,0,0.7),
-    0 0 60px -20px var(--accent-glow);
-  overflow: hidden;
-}
-
-.card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(91,143,255,0.5) 40%, rgba(0,229,200,0.4) 60%, transparent);
-}
-
-/* ─────────────────────────────────────────────
-   SECTION VISIBILITY
-───────────────────────────────────────────── */
-.section { display: none; }
-.section.active { display: flex; }
-
-/* ─────────────────────────────────────────────
-   TYPOGRAPHY
-───────────────────────────────────────────── */
-.font-display { font-family: 'Syne', sans-serif; }
-.font-mono    { font-family: 'Space Mono', monospace; }
-
-/* ─────────────────────────────────────────────
-   LOADER OVERLAY
-───────────────────────────────────────────── */
-#loader-overlay {
-  position: fixed; inset: 0; z-index: 200;
-  background: rgba(2,5,16,0.92);
-  backdrop-filter: blur(20px);
-  display: none; flex-direction: column;
-  align-items: center; justify-content: center; gap: 20px;
-}
-#loader-overlay.active { display: flex; }
-
-.spinner-ring {
-  width: 56px; height: 56px;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-right-color: var(--accent2);
-  animation: spin 1s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.loader-text {
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--accent);
-  animation: blink 1.5s ease infinite;
-}
-@keyframes blink { 0%,100%{ opacity:1} 50%{opacity:0.4} }
-
-/* ─────────────────────────────────────────────
-   TOAST
-───────────────────────────────────────────── */
-#toast-container {
-  position: fixed;
-  top: max(16px, var(--safe-top));
-  left: 50%; transform: translateX(-50%);
-  width: min(94vw, 400px);
-  z-index: 500;
-  display: flex; flex-direction: column; gap: 10px;
-  pointer-events: none;
-}
-
-.toast {
-  background: rgba(8,16,40,0.95);
-  border: 1px solid var(--border-hi);
-  border-radius: var(--r-sm);
-  padding: 14px 16px;
-  display: flex; align-items: flex-start; gap: 12px;
-  backdrop-filter: blur(20px);
-  animation: toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
-  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.6);
-}
-.toast.exiting { animation: toastOut 0.3s ease forwards; }
-.toast-icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
-.toast-msg { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; line-height: 1.5; }
-.toast.error  { border-color: var(--danger-glow); box-shadow: 0 0 30px -10px var(--danger-glow); }
-.toast.success{ border-color: var(--accent2-glow); box-shadow: 0 0 30px -10px var(--accent2-glow); }
-.toast.warning{ border-color: rgba(255,184,77,0.3); }
-
-@keyframes toastIn  { from{ transform:translateY(-120%) scale(0.9); opacity:0 } to{ transform:translateY(0) scale(1); opacity:1 } }
-@keyframes toastOut { from{ opacity:1; transform:translateY(0)    } to{ opacity:0; transform:translateY(-20px) } }
-
-/* ─────────────────────────────────────────────
-   ANTI-CHEAT BLUR
-───────────────────────────────────────────── */
-#blur-warning {
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(2,5,16,0.97);
-  backdrop-filter: blur(30px);
-  display: none;
-  flex-direction: column; align-items: center; justify-content: center;
-  gap: 16px; text-align: center; padding: 32px;
-}
-#blur-warning.active { display: flex; }
-
-.blur-icon {
-  width: 72px; height: 72px;
-  border-radius: 50%;
-  border: 1.5px solid var(--danger);
-  display: flex; align-items: center; justify-content: center;
-  animation: pulseDanger 2s ease infinite;
-  color: var(--danger); font-size: 28px;
-}
-@keyframes pulseDanger { 0%,100%{box-shadow:0 0 0 0 var(--danger-glow)} 50%{box-shadow:0 0 0 16px transparent} }
-
-/* ─────────────────────────────────────────────
-   ── 1. LOGIN ──
-───────────────────────────────────────────── */
-#login-section {
-  width: min(92vw, 420px);
-  flex-direction: column;
-  padding: 36px 32px;
-  gap: 0;
-}
-
-@media (max-width:420px) { #login-section { padding: 28px 22px; } }
-
-.logo-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 6px 14px;
-  border: 1px solid var(--border-hi);
-  border-radius: 100px;
-  font-family: 'Space Mono', monospace;
-  font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase;
-  color: var(--accent);
-  background: rgba(91,143,255,0.07);
-  margin-bottom: 24px;
-}
-.logo-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
-  animation: blink 2s ease infinite;
-}
-
-.logo-title {
-  font-family: 'Syne', sans-serif;
-  font-size: clamp(32px, 8vw, 46px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  color: #fff;
-  background: linear-gradient(135deg, #fff 30%, #8ab4ff 70%, #00e5c8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.logo-sub {
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 500;
-  margin-top: 8px;
-}
-
-.form-section { margin-top: 32px; width: 100%; }
-
-.field-label {
-  display: block;
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 600;
-  margin-bottom: 10px;
-  font-family: 'Space Mono', monospace;
-}
-
-.field-input {
-  width: 100%;
-  background: rgba(5,12,30,0.7);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  color: #fff;
-  font-family: 'Space Mono', monospace;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  text-align: center;
-  padding: 18px 20px;
-  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
-  outline: none;
-  -webkit-user-select: text !important;
-  user-select: text !important;
-}
-.field-input::placeholder { color: rgba(100,130,200,0.3); font-size: 14px; }
-.field-input:focus {
-  border-color: var(--accent);
-  background: rgba(91,143,255,0.05);
-  box-shadow: 0 0 0 3px var(--accent-glow), 0 0 30px -10px var(--accent-glow);
-}
-
-.btn-primary {
-  width: 100%;
-  margin-top: 16px;
-  padding: 18px 24px;
-  border-radius: var(--r-sm);
-  border: none; cursor: pointer;
-  background: linear-gradient(135deg, var(--accent) 0%, #3d6fe8 100%);
-  color: #fff;
-  font-family: 'Space Mono', monospace;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  transition: transform 0.15s, box-shadow 0.25s, filter 0.2s;
-  box-shadow: 0 8px 30px -8px var(--accent-glow), 0 2px 8px -2px rgba(91,143,255,0.6);
-  position: relative; overflow: hidden;
-}
-.btn-primary::before {
-  content: '';
-  position: absolute; top: 0; left: -100%;
-  width: 60%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-  transition: left 0.5s ease;
-}
-.btn-primary:hover::before { left: 200%; }
-.btn-primary:hover  { filter: brightness(1.1); box-shadow: 0 12px 40px -8px var(--accent-glow), 0 4px 15px -2px rgba(91,143,255,0.5); }
-.btn-primary:active { transform: scale(0.97); }
-
-.btn-icon { font-size: 16px; }
-
-.warning-strip {
-  margin-top: 14px;
-  padding: 12px 16px;
-  border: 1px solid rgba(255,77,106,0.2);
-  border-radius: var(--r-sm);
-  background: rgba(255,77,106,0.06);
-  display: flex; align-items: center; gap: 10px;
-}
-.warning-strip span { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,150,165,0.8); font-weight: 600; line-height: 1.5; }
-
-.login-footer {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  opacity: 0.6;
-}
-.login-footer span { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
-
-/* ─────────────────────────────────────────────
-   ── 2. QUIZ ──
-───────────────────────────────────────────── */
-#quiz-section {
-  position: fixed; inset: 0;
-  flex-direction: column;
-  background: var(--bg);
-  z-index: 5;
-  overflow: hidden;
-}
-
-/* Subtle inner glow on quiz section */
-#quiz-section::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(91,143,255,0.04) 0%, transparent 70%);
-}
-
-.quiz-header {
-  flex-shrink: 0;
-  padding: max(16px, calc(var(--safe-top) + 12px)) 20px 16px;
-  display: flex; justify-content: space-between; align-items: center;
-  border-bottom: 1px solid var(--border);
-  position: relative; z-index: 2;
-}
-
-@media (min-width: 600px) { .quiz-header { padding: 20px 32px 18px; } }
-
-.candidate-block { display: flex; flex-direction: column; gap: 4px; }
-.candidate-label {
-  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--muted); font-weight: 600; font-family: 'Space Mono', monospace;
-}
-.candidate-id {
-  display: flex; align-items: center; gap: 8px;
-}
-.status-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 8px var(--success);
-  animation: blink 2s ease infinite;
-}
-.candidate-roll {
-  font-family: 'Space Mono', monospace;
-  font-size: 20px; font-weight: 700;
-  letter-spacing: 0.12em; color: #fff;
-}
-
-.timer-block {
-  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
-}
-.timer-label {
-  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--accent); font-weight: 700; font-family: 'Space Mono', monospace;
-}
-.timer-value {
-  font-family: 'Space Mono', monospace;
-  font-size: 28px; font-weight: 700;
-  color: var(--accent);
-  text-shadow: 0 0 20px var(--accent-glow);
-  letter-spacing: 0.05em;
-  transition: color 0.5s, text-shadow 0.5s;
-}
-.timer-value.danger {
-  color: var(--danger);
-  text-shadow: 0 0 20px var(--danger-glow);
-  animation: blink 1s ease infinite;
-}
-
-/* Progress track */
-.progress-track {
-  flex-shrink: 0;
-  padding: 14px 20px;
-  position: relative; z-index: 2;
-}
-@media (min-width: 600px) { .progress-track { padding: 14px 32px; } }
-
-.progress-meta {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 10px;
-}
-.progress-meta span {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--muted); font-weight: 700;
-}
-.progress-meta .pct { color: var(--accent2); text-shadow: 0 0 10px var(--accent2-glow); }
-
-.progress-bar-bg {
-  height: 3px; background: rgba(255,255,255,0.06);
-  border-radius: 4px; overflow: hidden;
-}
-.progress-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
-  border-radius: 4px;
-  width: 0;
-  transition: width 0.5s cubic-bezier(0.34,1.3,0.64,1);
-  box-shadow: 0 0 12px var(--accent-glow);
-}
-
-/* Question area */
-.question-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 20px;
-  position: relative; z-index: 2;
-  scroll-behavior: smooth;
-  overscroll-behavior: contain;
-}
-@media (min-width: 600px) { .question-scroll { padding: 20px 32px; } }
-
-/* Scrollbar */
-.question-scroll::-webkit-scrollbar { width: 3px; }
-.question-scroll::-webkit-scrollbar-track { background: transparent; }
-.question-scroll::-webkit-scrollbar-thumb { background: rgba(91,143,255,0.25); border-radius: 4px; }
-
-.question-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--r-sm);
-  padding: 20px;
-  margin-bottom: 18px;
-  position: relative;
-}
-.q-num {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px; letter-spacing: 0.2em;
-  text-transform: uppercase; color: var(--accent);
-  opacity: 0.7; margin-bottom: 10px;
-}
-.q-text {
-  font-family: 'Inter', sans-serif;
-  font-size: clamp(15px, 3.5vw, 18px);
-  font-weight: 400;
-  line-height: 1.7;
-  color: #e8f0ff;
-}
-.q-image {
-  width: 100%;
-  max-height: 240px;
-  object-fit: contain;
-  border-radius: 10px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border);
-  background: rgba(0,0,0,0.4);
-}
-
-/* Options */
-.options-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; }
-
-.option-item {
-  cursor: pointer;
-  position: relative;
-}
-.option-item input[type="radio"] { display: none; }
-
-.option-box {
-  display: flex; align-items: center; gap: 14px;
-  padding: 16px 18px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  background: rgba(8,16,40,0.5);
-  transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
-  position: relative; overflow: hidden;
-}
-.option-box::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(91,143,255,0.06), transparent);
-  opacity: 0; transition: opacity 0.22s;
-}
-
-.option-item:active .option-box { transform: scale(0.98); }
-
-.option-item input:checked + .option-box {
-  border-color: var(--accent);
-  background: rgba(91,143,255,0.09);
-  box-shadow: 0 0 0 1px rgba(91,143,255,0.2) inset, 0 8px 24px -8px var(--accent-glow);
-}
-.option-item input:checked + .option-box::before { opacity: 1; }
-
-.option-radio {
-  flex-shrink: 0;
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  border: 2px solid rgba(100,150,255,0.3);
-  display: flex; align-items: center; justify-content: center;
-  transition: border-color 0.22s, box-shadow 0.22s;
-}
-.option-radio-dot {
-  width: 9px; height: 9px; border-radius: 50%;
-  background: transparent;
-  transition: background 0.22s, box-shadow 0.22s;
-}
-.option-item input:checked + .option-box .option-radio {
-  border-color: var(--accent);
-  box-shadow: 0 0 12px var(--accent-glow);
-}
-.option-item input:checked + .option-box .option-radio-dot {
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
-}
-.option-text {
-  font-size: clamp(14px, 3.2vw, 16px);
-  color: #c8daff;
-  line-height: 1.5;
-  font-weight: 400;
-}
-.option-item input:checked + .option-box .option-text {
-  color: #fff;
-}
-
-/* Footer nav */
-.quiz-footer {
-  flex-shrink: 0;
-  padding: 14px 20px max(14px, calc(var(--safe-bottom) + 10px));
-  border-top: 1px solid var(--border);
-  display: flex; gap: 10px;
-  position: relative; z-index: 2;
-  background: rgba(2,5,16,0.7);
-  backdrop-filter: blur(10px);
-}
-@media (min-width: 600px) { .quiz-footer { padding: 16px 32px max(16px, calc(var(--safe-bottom) + 12px)); } }
-
-.btn-nav {
-  flex: 1;
-  padding: 16px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--border-hi);
-  background: rgba(15,26,60,0.6);
-  color: var(--muted);
-  font-family: 'Space Mono', monospace;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.14em; text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-}
-.btn-nav:hover { border-color: rgba(91,143,255,0.35); color: var(--text); background: rgba(91,143,255,0.06); }
-.btn-nav:active { transform: scale(0.97); }
-.btn-nav:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
-
-.btn-next-hi {
-  border-color: rgba(91,143,255,0.4);
-  color: var(--accent);
-  background: rgba(91,143,255,0.07);
-}
-.btn-next-hi:hover { background: rgba(91,143,255,0.13); border-color: var(--accent); }
-
-.btn-submit {
-  flex: 2;
-  background: linear-gradient(135deg, var(--accent2), #00b89f);
-  border: none;
-  color: #003830;
-  font-family: 'Space Mono', monospace;
-  font-size: 12px; font-weight: 700;
-  letter-spacing: 0.15em; text-transform: uppercase;
-  padding: 16px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  box-shadow: 0 8px 24px -6px var(--accent2-glow);
-}
-.btn-submit:hover { filter: brightness(1.1); box-shadow: 0 12px 32px -6px var(--accent2-glow); }
-.btn-submit:active { transform: scale(0.97); }
-.btn-submit:disabled { opacity: 0.45; cursor: not-allowed; background: rgba(0,229,200,0.3); box-shadow: none; }
-.btn-submit.pulse { animation: submitPulse 1.5s ease infinite; }
-@keyframes submitPulse { 0%,100%{box-shadow:0 8px 24px -6px var(--accent2-glow)} 50%{box-shadow:0 8px 40px -2px var(--accent2-glow)} }
-
-/* ─────────────────────────────────────────────
-   ── 3. RESULT ──
-───────────────────────────────────────────── */
-#result-section {
-  width: min(92vw, 420px);
-  flex-direction: column;
-  padding: 36px 32px;
-  text-align: center;
-  gap: 0;
-}
-@media (max-width:420px) { #result-section { padding: 28px 22px; } }
-
-.result-icon {
-  width: 76px; height: 76px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(0,229,200,0.35);
-  background: rgba(0,229,200,0.08);
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 24px;
-  box-shadow: 0 0 40px -10px var(--accent2-glow);
-  animation: resultPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
-}
-@keyframes resultPop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
-
-.result-icon svg { color: var(--accent2); }
-
-.result-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 28px; font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #fff; margin-bottom: 6px;
-  line-height: 1.2;
-}
-.result-sub {
-  font-size: 10px; letter-spacing: 0.2em;
-  text-transform: uppercase; color: var(--muted);
-  font-weight: 600; margin-bottom: 28px;
-  font-family: 'Space Mono', monospace;
-}
-
-.score-panel {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  padding: 24px;
-  margin-bottom: 24px;
-  position: relative; overflow: hidden;
-}
-.score-panel::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
-}
-.score-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px; letter-spacing: 0.2em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
-}
-.score-value {
-  font-family: 'Syne', sans-serif;
-  font-size: 60px; font-weight: 800;
-  line-height: 1;
-  background: linear-gradient(135deg, #fff, var(--accent), var(--accent2));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.score-total {
-  font-family: 'Space Mono', monospace;
-  font-size: 20px; color: var(--muted);
-  font-weight: 700; vertical-align: bottom;
-}
-.score-divider {
-  width: 40px; height: 2px;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
-  border-radius: 4px; margin: 14px auto;
-}
-.score-msg { font-size: 13px; color: var(--text); line-height: 1.6; }
-
-.btn-end {
-  width: 100%;
-  padding: 18px;
-  border: 1px solid var(--border-hi);
-  border-radius: var(--r-sm);
-  background: rgba(91,143,255,0.06);
-  color: var(--accent);
-  font-family: 'Space Mono', monospace;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.18em; text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.btn-end:hover { background: rgba(91,143,255,0.12); border-color: var(--accent); }
-.btn-end:active { transform: scale(0.98); }
-
-/* ─────────────────────────────────────────────
-   ── 4. LOCKED ──
-───────────────────────────────────────────── */
-#locked-section {
-  width: min(92vw, 420px);
-  flex-direction: column;
-  padding: 36px 32px;
-  text-align: center;
-  border-color: rgba(255,77,106,0.25);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.04) inset,
-    0 40px 80px -20px rgba(0,0,0,0.7),
-    0 0 60px -20px var(--danger-glow);
-}
-@media (max-width:420px) { #locked-section { padding: 28px 22px; } }
-
-.lock-icon {
-  width: 76px; height: 76px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255,77,106,0.35);
-  background: rgba(255,77,106,0.08);
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 20px;
-  animation: lockPulse 2s ease infinite;
-}
-@keyframes lockPulse { 0%,100%{box-shadow:0 0 0 0 var(--danger-glow)} 50%{box-shadow:0 0 30px -4px var(--danger-glow)} }
-
-.lock-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 28px; font-weight: 800; color: var(--danger);
-  letter-spacing: -0.01em; margin-bottom: 8px;
-}
-.lock-sub {
-  font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 24px;
-}
-.violation-log {
-  text-align: left;
-  background: rgba(255,77,106,0.05);
-  border: 1px solid rgba(255,77,106,0.2);
-  border-radius: var(--r-sm);
-  padding: 16px 18px;
-  margin-bottom: 20px;
-}
-.violation-log-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 8px; letter-spacing: 0.2em;
-  text-transform: uppercase; color: var(--danger);
-  opacity: 0.8; margin-bottom: 8px; display: block;
-}
-.violation-log-text {
-  font-size: 12px; color: #ffccd4; line-height: 1.6;
-  border-left: 2px solid var(--danger); padding-left: 12px;
-}
-
-.override-panel {
-  background: rgba(255,77,106,0.08);
-  border: 1px solid rgba(255,77,106,0.25);
-  border-radius: var(--r-sm);
-  padding: 20px;
-  display: flex; flex-direction: column; gap: 4px; align-items: center;
-}
-.override-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px; letter-spacing: 0.2em;
-  text-transform: uppercase; color: rgba(255,150,165,0.7);
-}
-.override-value {
-  font-family: 'Syne', sans-serif;
-  font-size: 22px; font-weight: 800;
-  color: #fff; letter-spacing: 0.05em;
-}
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#03070c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>AeroQuest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --safe-bottom: env(safe-area-inset-bottom, 16px);
+            --safe-top: env(safe-area-inset-top, 16px);
+            --neon: #00f0ff;
+            --neon-dim: rgba(0,240,255,0.12);
+            --danger: #ff2a2a;
+            --success: #00ffaa;
+            --dark: #03070c;
+            --panel: rgba(10,20,40,0.75);
+            --border: rgba(0,240,255,0.12);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #03070c;
+            color: #e2e8f0;
+            overflow: hidden;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: pan-y;
+            height: 100dvh;
+            width: 100%;
+        }
+
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* ── GRID BACKGROUND ── */
+        .grid-bg {
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(0,240,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,240,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none; z-index: 0;
+        }
+        .grid-bg::after {
+            content: '';
+            position: fixed; inset: 0;
+            background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(0,100,180,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* ── TYPOGRAPHY ── */
+        .font-sci { font-family: 'Orbitron', sans-serif; }
+        .neon-text { color: var(--neon); text-shadow: 0 0 12px rgba(0,240,255,0.6), 0 0 24px rgba(0,240,255,0.3); }
+        .danger-text { color: var(--danger); text-shadow: 0 0 10px rgba(255,42,42,0.5); }
+        .success-text { color: var(--success); text-shadow: 0 0 10px rgba(0,255,170,0.5); }
+
+        /* ── GLASS PANEL ── */
+        .glass {
+            background: linear-gradient(135deg, rgba(12,22,44,0.85) 0%, rgba(3,7,12,0.97) 100%);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid var(--border);
+            box-shadow: 0 24px 48px -8px rgba(0,0,0,0.85), inset 0 0 24px rgba(0,240,255,0.04);
+        }
+
+        /* ── SCROLLBAR ── */
+        .custom-scroll::-webkit-scrollbar { width: 3px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.2); border-radius: 4px; }
+        .custom-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,240,255,0.2) transparent; }
+
+        /* ── HIDDEN ── */
+        .hidden { display: none !important; }
+
+        /* ── LOADER ── */
+        #loader-overlay {
+            position: fixed; inset: 0;
+            background: rgba(3,7,12,0.97);
+            backdrop-filter: blur(20px);
+            z-index: 9000;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .loader-ring {
+            width: 56px; height: 56px;
+            border: 3px solid rgba(0,240,255,0.1);
+            border-top-color: var(--neon);
+            border-right-color: var(--neon);
+            border-radius: 50%;
+            animation: spin 1s cubic-bezier(0.68,-0.55,0.265,1.55) infinite;
+        }
+        .loader-ping {
+            position: absolute;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 1px solid rgba(0,240,255,0.2);
+            animation: ping 1.5s ease-out infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes ping { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+
+        /* ── BLUR WARNING (anti-cheat) ── */
+        #blur-warning {
+            position: fixed; inset: 0;
+            background: rgba(3,7,12,0.99);
+            backdrop-filter: blur(24px);
+            z-index: 9999;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        /* ── TOAST ── */
+        #toast-container {
+            position: fixed; top: 1rem; left: 50%; transform: translateX(-50%);
+            z-index: 8000; display: flex; flex-direction: column; gap: 0.75rem;
+            width: min(94vw, 420px); pointer-events: none;
+        }
+        .toast {
+            border-radius: 1rem; padding: 0.875rem 1rem;
+            display: flex; align-items: flex-start; gap: 0.75rem;
+            backdrop-filter: blur(16px); pointer-events: auto;
+            animation: toastIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+        }
+        .toast.out { animation: toastOut 0.3s ease-in forwards; }
+        @keyframes toastIn { from { transform: translateY(-120%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes toastOut { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-20px); opacity: 0; } }
+
+        /* ── INPUT ── */
+        .input-sci {
+            background: rgba(8,14,26,0.7);
+            border: 1.5px solid #1e293b;
+            border-radius: 0.875rem;
+            color: #fff;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            -webkit-user-select: text !important;
+            user-select: text !important;
+        }
+        .input-sci:focus {
+            outline: none;
+            border-color: var(--neon);
+            box-shadow: 0 0 0 3px rgba(0,240,255,0.1), 0 0 20px rgba(0,240,255,0.1);
+            background: rgba(0,240,255,0.03);
+        }
+        .input-sci::placeholder { color: #2d4060; font-family: 'Orbitron', sans-serif; }
+
+        /* ══════════════════════════════════════
+           1. LOGIN SECTION
+        ══════════════════════════════════════ */
+        #login-section {
+            position: absolute; inset: 0; z-index: 10;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+        .login-card {
+            width: 100%; max-width: 420px;
+            border-radius: 2rem;
+            padding: clamp(1.5rem, 5vw, 2.5rem);
+        }
+        .login-badge {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 0.375rem 0.875rem;
+            border-radius: 999px;
+            border: 1px solid rgba(0,240,255,0.3);
+            background: rgba(0,240,255,0.05);
+            color: var(--neon);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
+        }
+        .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon); animation: blink 2s ease-in-out infinite; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+        .btn-primary {
+            width: 100%; padding: 1rem;
+            border: 1.5px solid var(--neon);
+            border-radius: 0.875rem;
+            background: transparent;
+            color: var(--neon);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem; font-weight: 700;
+            letter-spacing: 0.15em; text-transform: uppercase;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 0.625rem;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            box-shadow: 0 0 16px rgba(0,240,255,0.08);
+        }
+        .btn-primary:hover { background: rgba(0,240,255,0.08); box-shadow: 0 0 24px rgba(0,240,255,0.18); }
+        .btn-primary:active { transform: scale(0.97); }
+
+        /* ══════════════════════════════════════
+           2. QUIZ SECTION — DESKTOP SPLIT LAYOUT
+        ══════════════════════════════════════ */
+        #quiz-section {
+            position: absolute; inset: 0; z-index: 10;
+            display: flex;
+        }
+
+        /* ─ LEFT SIDEBAR (desktop only) ─ */
+        .quiz-sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            padding: 1.75rem 1.5rem;
+            gap: 1.5rem;
+            background: linear-gradient(180deg, rgba(6,14,28,0.9) 0%, rgba(3,7,12,0.98) 100%);
+        }
+
+        .sidebar-logo {
+            display: flex; flex-direction: column; gap: 0.375rem;
+        }
+
+        .candidate-card {
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1rem;
+            background: rgba(0,240,255,0.03);
+        }
+        .candidate-status {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: blink 3s ease-in-out infinite;
+        }
+
+        .timer-card {
+            border: 1px solid rgba(0,240,255,0.2);
+            border-radius: 1rem;
+            padding: 1rem 1.25rem;
+            background: rgba(0,240,255,0.04);
+            text-align: center;
+        }
+
+        /* Question Map */
+        .question-map {
+            flex: 1; overflow-y: auto;
+        }
+        .question-map::-webkit-scrollbar { display: none; }
+        .qmap-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.4rem;
+            margin-top: 0.625rem;
+        }
+        .qmap-btn {
+            aspect-ratio: 1;
+            border-radius: 0.5rem;
+            border: 1.5px solid #1e293b;
+            background: rgba(15,23,42,0.5);
+            color: #475569;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .qmap-btn.answered { border-color: rgba(0,240,255,0.5); background: rgba(0,240,255,0.1); color: var(--neon); }
+        .qmap-btn.current { border-color: var(--neon); background: rgba(0,240,255,0.15); color: var(--neon); box-shadow: 0 0 10px rgba(0,240,255,0.25); }
+
+        /* ─ RIGHT PANEL (main content) ─ */
+        .quiz-main {
+            flex: 1; display: flex; flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        /* Mobile header (hidden on desktop) */
+        .mobile-header {
+            display: none;
+            padding: 1rem 1.25rem 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+
+        /* Progress bar */
+        .progress-bar-wrap {
+            padding: 0.75rem 1.5rem 0;
+            flex-shrink: 0;
+        }
+        .progress-track {
+            height: 3px; width: 100%;
+            background: rgba(255,255,255,0.06);
+            border-radius: 999px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--neon);
+            box-shadow: 0 0 8px var(--neon);
+            width: 0; transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1);
+        }
+
+        /* Question area */
+        .question-area {
+            flex: 1; overflow-y: auto; min-height: 0;
+            padding: 1.5rem 1.5rem 1rem;
+            display: flex; flex-direction: column; gap: 1.25rem;
+        }
+        .question-card {
+            border-left: 3px solid var(--neon);
+            padding: 1.25rem 1.25rem 1.25rem 1.5rem;
+            border-radius: 0 1rem 1rem 0;
+            background: rgba(0,240,255,0.03);
+            border-top: 1px solid rgba(0,240,255,0.08);
+            border-right: 1px solid rgba(0,240,255,0.08);
+            border-bottom: 1px solid rgba(0,240,255,0.08);
+            flex-shrink: 0;
+        }
+        #question-text {
+            font-size: clamp(1rem, 2vw, 1.15rem);
+            line-height: 1.65; font-weight: 500; color: #e2e8f0;
+        }
+        #question-image {
+            width: 100%; max-height: 220px; object-fit: contain;
+            border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.4); margin-bottom: 0.875rem;
+        }
+
+        /* Options */
+        #options-container {
+            display: flex; flex-direction: column; gap: 0.625rem;
+            flex-shrink: 0;
+        }
+        .option-label { display: block; cursor: pointer; }
+        .option-label:active .option-box { transform: scale(0.98); }
+        .option-box {
+            display: flex; align-items: center; gap: 0.875rem;
+            padding: 0.875rem 1rem;
+            border-radius: 0.875rem;
+            border: 1.5px solid #1e293b;
+            background: rgba(15,23,42,0.4);
+            transition: border-color 0.22s, background 0.22s, box-shadow 0.22s, transform 0.15s;
+            min-height: 56px;
+        }
+        .option-box:hover { border-color: rgba(0,240,255,0.3); background: rgba(0,240,255,0.04); }
+        .option-input { display: none; }
+        .option-input:checked + .option-box {
+            border-color: var(--neon);
+            background: rgba(0,240,255,0.09);
+            box-shadow: inset 0 0 20px rgba(0,240,255,0.07), 0 4px 16px rgba(0,0,0,0.5);
+        }
+        .radio-outer {
+            width: 20px; height: 20px; flex-shrink: 0;
+            border-radius: 50%; border: 2px solid #334155;
+            display: flex; align-items: center; justify-content: center;
+            transition: border-color 0.22s, box-shadow 0.22s;
+        }
+        .radio-inner {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: #334155; opacity: 0.5;
+            transition: background 0.22s, opacity 0.22s, box-shadow 0.22s;
+        }
+        .option-input:checked + .option-box .radio-outer {
+            border-color: var(--neon); box-shadow: 0 0 10px rgba(0,240,255,0.4);
+        }
+        .option-input:checked + .option-box .radio-inner {
+            background: var(--neon); opacity: 1; box-shadow: 0 0 8px var(--neon);
+        }
+        .option-letter {
+            font-family: 'Orbitron', sans-serif; font-size: 0.65rem;
+            color: #475569; font-weight: 700; letter-spacing: 0.05em;
+            min-width: 1.25rem; text-align: center;
+            transition: color 0.22s;
+        }
+        .option-input:checked + .option-box .option-letter { color: var(--neon); }
+        .option-text { font-size: 1rem; font-weight: 500; color: #cbd5e1; line-height: 1.4; }
+
+        /* Footer nav */
+        .quiz-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            display: flex; gap: 0.75rem;
+            flex-shrink: 0;
+            background: rgba(3,7,12,0.6);
+            backdrop-filter: blur(8px);
+        }
+        .btn-nav {
+            flex: 1; padding: 0.875rem;
+            border-radius: 0.875rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase;
+            cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        }
+        .btn-nav:active { transform: scale(0.97); }
+        .btn-prev {
+            border: 1.5px solid #1e293b;
+            background: rgba(15,23,42,0.5);
+            color: #64748b;
+        }
+        .btn-prev:hover:not(:disabled) { border-color: #334155; color: #94a3b8; }
+        .btn-prev:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn-next {
+            border: 1.5px solid rgba(0,240,255,0.4);
+            background: rgba(0,240,255,0.05);
+            color: var(--neon);
+            flex: 2;
+            box-shadow: 0 0 12px rgba(0,240,255,0.08);
+        }
+        .btn-next:hover { background: rgba(0,240,255,0.1); box-shadow: 0 0 20px rgba(0,240,255,0.15); }
+        .btn-submit {
+            border: 1.5px solid var(--neon);
+            background: var(--neon);
+            color: #03070c;
+            flex: 2;
+            box-shadow: 0 0 20px rgba(0,240,255,0.4);
+        }
+        .btn-submit:hover { box-shadow: 0 0 32px rgba(0,240,255,0.6); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; animation: none !important; }
+        .btn-submit.pulse { animation: pulseSub 1.5s ease-in-out infinite; }
+        @keyframes pulseSub {
+            0%,100% { box-shadow: 0 0 20px rgba(0,240,255,0.4); }
+            50% { box-shadow: 0 0 40px rgba(0,240,255,0.7); }
+        }
+
+        /* ══════════════════════════════════════
+           3. RESULT SECTION
+        ══════════════════════════════════════ */
+        #result-section, #locked-section {
+            position: absolute; inset: 0; z-index: 10;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1.5rem;
+        }
+        .result-card, .locked-card {
+            width: 100%; max-width: 420px;
+            border-radius: 2rem; padding: clamp(1.5rem, 5vw, 2.5rem);
+            text-align: center;
+        }
+
+        /* ══════════════════════════════════════
+           TRANSITIONS
+        ══════════════════════════════════════ */
+        .section-fade { transition: opacity 0.4s ease; }
+
+        /* ══════════════════════════════════════
+           DESKTOP: show sidebar, tweak layout
+        ══════════════════════════════════════ */
+        @media (min-width: 768px) {
+            .quiz-sidebar { display: flex; }
+            .mobile-header { display: none !important; }
+            .progress-bar-wrap { padding: 1rem 2rem 0; }
+            .question-area { padding: 1.75rem 2rem 1.25rem; gap: 1.5rem; }
+            .quiz-footer { padding: 1.25rem 2rem; }
+        }
+
+        /* ══════════════════════════════════════
+           MOBILE: hide sidebar, show mobile header
+        ══════════════════════════════════════ */
+        @media (max-width: 767px) {
+            .quiz-sidebar { display: none !important; }
+            .mobile-header { display: flex !important; }
+            .question-area { padding: 1rem 1rem 0.75rem; }
+            .quiz-footer { padding: 0.75rem 1rem; gap: 0.5rem; }
+            .progress-bar-wrap { padding: 0.625rem 1rem 0; }
+            .btn-nav { padding: 0.75rem 0.5rem; font-size: 0.6rem; }
+            #question-text { font-size: 0.975rem; }
+            .option-box { padding: 0.75rem 0.875rem; min-height: 50px; }
+            .option-text { font-size: 0.925rem; }
+        }
+
+        /* Large desktop tweaks */
+        @media (min-width: 1200px) {
+            .quiz-sidebar { width: 300px; }
+        }
+        @media (min-width: 1600px) {
+            .quiz-sidebar { width: 320px; padding: 2rem 1.75rem; }
+            #question-text { font-size: 1.2rem; }
+        }
+
+        /* ── SEPARATOR LINE ── */
+        .sep { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
+
+        /* ── misc ── */
+        .label-xs {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.6rem; letter-spacing: 0.18em;
+            text-transform: uppercase; color: #475569; font-weight: 700;
+        }
+    </style>
 </head>
-
 <body>
-<!-- ══ Starfield canvas ══ -->
-<canvas id="starfield"></canvas>
 
-<!-- ══ Nebula blobs ══ -->
-<div class="nebula n1"></div>
-<div class="nebula n2"></div>
-<div class="nebula n3"></div>
+<div class="grid-bg"></div>
 
-<!-- ══ Toast ══ -->
+<!-- ─────────────── TOAST CONTAINER ─────────────── -->
 <div id="toast-container"></div>
 
-<!-- ══ Loader ══ -->
-<div id="loader-overlay">
-  <div class="spinner-ring"></div>
-  <div class="loader-text" id="loader-text">Establishing Uplink...</div>
+<!-- ─────────────── LOADER ─────────────── -->
+<div id="loader-overlay" class="hidden">
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:1.5rem;">
+        <div class="loader-ping"></div>
+        <div class="loader-ring"></div>
+    </div>
+    <p id="loader-text" class="font-sci neon-text" style="font-size:0.75rem;letter-spacing:0.25em;animation:blink 1.5s ease-in-out infinite;">ESTABLISHING UPLINK...</p>
 </div>
 
-<!-- ══ Anti-Cheat Screen ══ -->
-<div id="blur-warning">
-  <div class="blur-icon">
-    <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+<!-- ─────────────── BLUR WARNING ─────────────── -->
+<div id="blur-warning" class="hidden">
+    <svg style="width:64px;height:64px;color:var(--danger);margin-bottom:1.25rem;filter:drop-shadow(0 0 16px rgba(255,42,42,0.7));" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
     </svg>
-  </div>
-  <div>
-    <div class="font-display" style="font-size:26px;font-weight:800;color:var(--danger);letter-spacing:-0.01em;">Focus Lost</div>
-    <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6;">Return to the terminal.<br><span style="font-size:10px;opacity:0.6;">AI overlays, screen recording and app switching are prohibited.</span></div>
-  </div>
+    <h2 class="font-sci danger-text" style="font-size:clamp(1.5rem,5vw,2.25rem);letter-spacing:0.15em;margin-bottom:0.5rem;">FOCUS LOST</h2>
+    <div style="width:40px;height:2px;background:rgba(255,42,42,0.5);border-radius:999px;margin:0.75rem auto 1rem;"></div>
+    <p style="color:#94a3b8;max-width:320px;line-height:1.6;font-size:0.9rem;">Return to the terminal immediately.</p>
+    <p style="color:#475569;font-size:0.75rem;margin-top:0.5rem;">AI overlays & screen recording are prohibited.</p>
 </div>
 
-<!-- ══════════════════════════════════════════
-     1. LOGIN
-══════════════════════════════════════════ -->
-<main id="login-section" class="section card active">
-  <div style="text-align:center;display:flex;flex-direction:column;align-items:center;">
-    <div class="logo-badge">
-      <div class="logo-dot"></div>
-      MCQ Assessment Portal
-    </div>
-    <div class="logo-title">AeroQuest</div>
-    <div class="logo-sub">Candidate Authentication</div>
-  </div>
-
-  <form id="login-form" class="form-section">
-    <label class="field-label" for="roll-input">Identification Roll Number</label>
-    <input
-      type="text" id="roll-input" required
-      autocomplete="off" placeholder="e.g. 25U201"
-      class="field-input"
-    >
-
-    <button type="submit" class="btn-primary">
-      <span class="btn-icon">⚡</span>
-      Initiate Sequence
-    </button>
-
-    <div class="warning-strip">
-      <span>⚠️</span>
-      <span>Device will be locked to this session. Tab switching will result in penalties.</span>
-    </div>
-  </form>
-
-  <div class="login-footer">
-    <svg width="14" height="14" fill="none" stroke="var(--accent)" viewBox="0 0 24 24" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-    </svg>
-    <span>End-to-End Encryption Active</span>
-  </div>
-</main>
-
-<!-- ══════════════════════════════════════════
-     2. QUIZ
-══════════════════════════════════════════ -->
-<main id="quiz-section" class="section">
-  <!-- Header -->
-  <header class="quiz-header">
-    <div class="candidate-block">
-      <div class="candidate-label">Candidate</div>
-      <div class="candidate-id">
-        <div class="status-dot"></div>
-        <span class="candidate-roll font-mono" id="display-roll">---</span>
-      </div>
-    </div>
-    <div class="timer-block">
-      <div class="timer-label">Time Left</div>
-      <div class="timer-value font-mono" id="timer-display">10:00</div>
-    </div>
-  </header>
-
-  <!-- Progress -->
-  <div class="progress-track">
-    <div class="progress-meta">
-      <span id="question-counter">Question 1 / X</span>
-      <span class="pct" id="completion-percent">0% Answered</span>
-    </div>
-    <div class="progress-bar-bg">
-      <div class="progress-bar-fill" id="progress-fill"></div>
-    </div>
-  </div>
-
-  <!-- Scrollable Question + Options -->
-  <div class="question-scroll" id="question-scroll">
-    <div class="question-card">
-      <div class="q-num" id="q-num-label">Q 01</div>
-      <img id="question-image" src="" alt="" class="q-image" style="display:none;">
-      <p id="question-text" class="q-text">Loading telemetry data...</p>
-    </div>
-    <div class="options-list" id="options-container"></div>
-  </div>
-
-  <!-- Footer Nav -->
-  <footer class="quiz-footer">
-    <button class="btn-nav" id="btn-prev">← Prev</button>
-    <button class="btn-nav btn-next-hi" id="btn-next">Next →</button>
-    <button class="btn-submit" id="btn-submit" style="display:none;" disabled>
-      ✦ Transmit
-    </button>
-  </footer>
-</main>
-
-<!-- ══════════════════════════════════════════
-     3. RESULT
-══════════════════════════════════════════ -->
-<main id="result-section" class="section card">
-  <div class="result-icon">
-    <svg width="34" height="34" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-    </svg>
-  </div>
-  <div class="result-title font-display">Simulation<br>Complete</div>
-  <div class="result-sub">Data Encrypted &amp; Transmitted</div>
-
-  <div class="score-panel">
-    <div class="score-label">Final Score</div>
-    <div>
-      <span class="score-value" id="score-display">0</span>
-      <span class="score-total"> / <span id="total-display">0</span></span>
-    </div>
-    <div class="score-divider"></div>
-    <div class="score-msg" id="score-message"></div>
-  </div>
-
-  <button class="btn-end" onclick="window.location.reload()">
-    <span>✕</span>
-    Terminate Session
-  </button>
-</main>
-
-<!-- ══════════════════════════════════════════
-     4. LOCKED
-══════════════════════════════════════════ -->
-<main id="locked-section" class="section card">
-  <div class="lock-icon">
-    <svg width="32" height="32" fill="none" stroke="var(--danger)" viewBox="0 0 24 24" stroke-width="1.5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
-    </svg>
-  </div>
-  <div class="lock-title font-display">Session Locked</div>
-  <div class="lock-sub">Critical security violations detected.<br>Protocol terminated.</div>
-
-  <div class="violation-log">
-    <span class="violation-log-label">⬡ Violation Log</span>
-    <p class="violation-log-text" id="lock-reason-text">Multiple security events.</p>
-  </div>
-
-  <div class="override-panel">
-    <span class="override-label">Override Required</span>
-    <span class="override-value">Call Admin</span>
-  </div>
-</main>
-
-<!-- ══════════════════════════════════════════
-     APPLICATION LOGIC
-══════════════════════════════════════════ -->
-<script>
-/* ══ CONFIGURATION ══ */
-const API_URL = "https://script.google.com/macros/s/AKfycbwKC5RH5r5HeoaIga02TCAVPoo3Kk9tIJfHo6p17eUxhCMEZ54-kDSjZ-cRyFbNwIPZ/exec";
-
-let state = {
-  rollNo: '', questions: [], answers: {},
-  currentIndex: 0, timeLeft: 0, timerInterval: null,
-  isSubmitting: false, tabSwitches: 0, violationReason: ''
-};
-
-let preloadedQuestionsData = null;
-
-const $ = id => document.getElementById(id);
-const sections = {
-  login:  $('login-section'),
-  quiz:   $('quiz-section'),
-  result: $('result-section'),
-  locked: $('locked-section'),
-};
-
-/* ══ STARFIELD ══ */
-(function() {
-  const canvas = $('starfield');
-  const ctx = canvas.getContext('2d');
-  const stars = [];
-  let W, H;
-
-  function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  for (let i = 0; i < 180; i++) {
-    stars.push({
-      x: Math.random(), y: Math.random(),
-      r: Math.random() * 1.3,
-      o: Math.random() * 0.6 + 0.1,
-      s: Math.random() * 0.0005 + 0.0001,
-      d: Math.random() * Math.PI * 2,
-    });
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, W, H);
-    stars.forEach(s => {
-      s.d += s.s;
-      const flicker = Math.sin(s.d) * 0.15;
-      ctx.beginPath();
-      ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(180,210,255,${s.o + flicker})`;
-      ctx.fill();
-    });
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
-
-/* ══ API ══ */
-async function apiCall(action, payload = {}) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, ...payload })
-  });
-  if (!res.ok) throw new Error('Network error. Check connection.');
-  return res.json();
-}
-
-/* Preload questions silently */
-window.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const d = await apiCall('getQuestions');
-    if (d.success && d.questions) preloadedQuestionsData = d.questions;
-  } catch(e) {}
-});
-
-/* ══ LOGIN ══ */
-$('login-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const rollNo = $('roll-input').value.trim().toUpperCase();
-  if (!rollNo) return;
-  $('roll-input').blur();
-  requestFullscreen();
-  showLoader('Authenticating Identity...');
-  try {
-    const res = await apiCall('login', { roll_no: rollNo });
-    if (res.success) {
-      state.rollNo = rollNo;
-      $('display-roll').textContent = rollNo;
-      recoverState(res.time || 10);
-      showToast('Authentication Successful', 'success');
-      const qs = preloadedQuestionsData || (await apiCall('getQuestions')).questions;
-      if (!qs) throw new Error('No modules found.');
-      processQuizData(qs);
-    } else {
-      showToast(res.message || 'Access Denied.', 'error');
-      hideLoader();
-    }
-  } catch(err) {
-    showToast(err.message, 'error');
-    hideLoader();
-  }
-});
-
-/* ══ QUIZ SETUP ══ */
-function processQuizData(arr) {
-  state.questions = shuffleArray([...arr]);
-  state.questions.forEach(q => {
-    const opts = [
-      { id:'A', text:q.optionA },
-      { id:'B', text:q.optionB },
-      { id:'C', text:q.optionC },
-      { id:'D', text:q.optionD },
-    ].filter(o => o.text && String(o.text).trim());
-    q.shuffledOptions = shuffleArray(opts);
-  });
-  hideLoader();
-  switchSection('quiz');
-  startTimer();
-  renderQuestion();
-}
-
-/* ══ RENDER ══ */
-function renderQuestion() {
-  const q = state.questions[state.currentIndex];
-  const total = state.questions.length;
-  const num = state.currentIndex + 1;
-
-  $('question-counter').textContent = `Question ${num} / ${total}`;
-  const pct = Math.round((num - 1) / total * 100);
-  $('completion-percent').textContent = `${pct}% Answered`;
-  $('progress-fill').style.width = `${pct}%`;
-
-  $('q-num-label').textContent = `Q ${String(num).padStart(2,'0')}`;
-  $('question-text').textContent = q.question;
-
-  const img = $('question-image');
-  if (q.image && q.image.trim()) {
-    img.src = q.image.trim(); img.style.display = '';
-  } else {
-    img.src = ''; img.style.display = 'none';
-  }
-
-  const container = $('options-container');
-  container.innerHTML = '';
-  q.shuffledOptions.forEach(opt => {
-    const checked = state.answers[q.id] === opt.id ? 'checked' : '';
-    container.insertAdjacentHTML('beforeend', `
-      <label class="option-item">
-        <input type="radio" name="q_${q.id}" value="${opt.id}" ${checked}
-          onchange="selectAnswer('${q.id}','${opt.id}')">
-        <div class="option-box">
-          <div class="option-radio"><div class="option-radio-dot"></div></div>
-          <span class="option-text">${opt.text}</span>
+<!-- ════════════════════════════════════════
+     1. LOGIN SECTION
+════════════════════════════════════════ -->
+<section id="login-section" class="section-fade">
+    <div class="login-card glass">
+        <!-- Badge -->
+        <div style="text-align:center;margin-bottom:1.75rem;display:flex;flex-direction:column;align-items:center;gap:1rem;">
+            <div class="login-badge">
+                <span class="badge-dot"></span>
+                MCQ Assessment Portal
+            </div>
+            <h1 class="font-sci neon-text" style="font-size:clamp(1.6rem,7vw,2.25rem);letter-spacing:0.2em;font-weight:900;line-height:1;">AEROQUEST</h1>
+            <p class="label-xs" style="color:#334155;letter-spacing:0.25em;">Candidate Authentication</p>
         </div>
-      </label>
-    `);
-  });
 
-  $('question-scroll').scrollTop = 0;
+        <form id="login-form" style="display:flex;flex-direction:column;gap:1.25rem;">
+            <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                <label class="label-xs" style="text-align:center;letter-spacing:0.15em;">Identification Roll Number</label>
+                <input type="text" id="roll-input" required autocomplete="off" placeholder="E.G. 25U201"
+                       class="input-sci"
+                       style="width:100%;padding:1rem 1.25rem;text-align:center;letter-spacing:0.2em;font-weight:700;font-size:1.1rem;text-transform:uppercase;">
+            </div>
 
-  // Prev button
-  const btnPrev = $('btn-prev');
-  btnPrev.disabled = state.currentIndex === 0;
+            <button type="submit" class="btn-primary" style="margin-top:0.25rem;">
+                <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                Initiate Sequence
+            </button>
 
-  // Next / Submit toggle
-  const btnNext   = $('btn-next');
-  const btnSubmit = $('btn-submit');
-  if (state.currentIndex === total - 1) {
-    btnNext.style.display = 'none';
-    btnSubmit.style.display = '';
-  } else {
-    btnNext.style.display = '';
-    btnSubmit.style.display = 'none';
-  }
-  checkSubmit();
-}
+            <!-- Warning banner -->
+            <div style="border:1px solid rgba(255,42,42,0.3);background:rgba(255,42,42,0.07);border-radius:0.875rem;padding:0.75rem 1rem;display:flex;align-items:center;gap:0.625rem;">
+                <span style="font-size:0.875rem;flex-shrink:0;">⚠️</span>
+                <p style="font-size:0.7rem;color:var(--danger);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;font-family:'Orbitron',sans-serif;">Device will be locked to this session</p>
+            </div>
+        </form>
 
-window.selectAnswer = function(qId, val) {
-  state.answers[qId] = val;
-  saveState();
-  checkSubmit();
-};
+        <!-- Footer -->
+        <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+            <p style="font-size:0.65rem;color:#334155;text-transform:uppercase;letter-spacing:0.15em;display:flex;align-items:center;justify-content:center;gap:0.5rem;">
+                <svg style="width:12px;height:12px;color:var(--neon);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                End-to-End Encryption Active
+            </p>
+        </div>
+    </div>
+</section>
 
-$('btn-next').addEventListener('click', () => {
-  if (state.currentIndex < state.questions.length - 1) { state.currentIndex++; renderQuestion(); }
-});
-$('btn-prev').addEventListener('click', () => {
-  if (state.currentIndex > 0) { state.currentIndex--; renderQuestion(); }
-});
+<!-- ════════════════════════════════════════
+     2. QUIZ SECTION
+════════════════════════════════════════ -->
+<section id="quiz-section" class="section-fade hidden" style="background:rgba(3,7,12,0.5);backdrop-filter:blur(4px);">
 
-function checkSubmit() {
-  const answered = Object.keys(state.answers).length;
-  const total = state.questions.length;
-  const pct = Math.round(answered / total * 100);
-  $('completion-percent').textContent = `${pct}% Answered`;
-  $('progress-fill').style.width = `${pct}%`;
+    <!-- ── LEFT SIDEBAR (desktop) ── -->
+    <aside class="quiz-sidebar">
 
-  const btn = $('btn-submit');
-  if (answered === total) {
-    btn.disabled = false;
-    btn.classList.add('pulse');
-  } else {
-    btn.disabled = true;
-    btn.classList.remove('pulse');
-  }
-}
+        <!-- Logo -->
+        <div class="sidebar-logo">
+            <p class="label-xs" style="color:#1e3a5f;">AeroQuest</p>
+            <h1 class="font-sci neon-text" style="font-size:1.3rem;letter-spacing:0.15em;font-weight:900;line-height:1;">AEROQUEST</h1>
+            <div style="height:1px;background:linear-gradient(90deg,var(--neon),transparent);margin-top:0.25rem;opacity:0.3;"></div>
+        </div>
 
-$('btn-submit').addEventListener('click', () => submitQuiz(false));
+        <!-- Candidate -->
+        <div class="candidate-card">
+            <p class="label-xs" style="margin-bottom:0.5rem;">Candidate</p>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <span class="candidate-status"></span>
+                <span id="display-roll-desktop" class="font-sci" style="font-size:1.1rem;color:#fff;font-weight:700;letter-spacing:0.1em;">---</span>
+            </div>
+            <div style="margin-top:0.625rem;height:1px;" class="sep"></div>
+            <div style="margin-top:0.625rem;display:flex;justify-content:space-between;align-items:center;">
+                <p class="label-xs">Status</p>
+                <span style="font-size:0.65rem;color:var(--success);font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:0.1em;">ACTIVE</span>
+            </div>
+        </div>
 
-/* ══ SUBMIT ══ */
-async function submitQuiz(isAuto = false, isCheat = false, cheatReason = '') {
-  if (state.isSubmitting) return;
-  state.isSubmitting = true;
-  clearInterval(state.timerInterval);
+        <!-- Timer -->
+        <div class="timer-card">
+            <p class="label-xs" style="color:var(--neon);margin-bottom:0.25rem;">Time Remaining</p>
+            <div id="timer-desktop" class="font-sci neon-text" style="font-size:2.25rem;font-weight:900;letter-spacing:0.1em;line-height:1;font-variant-numeric:tabular-nums;">10:00</div>
+        </div>
 
-  if (isCheat) state.answers = {};
-  else if (isAuto) showToast('Time Expired — Auto-submitting...', 'warning');
+        <!-- Question Map -->
+        <div class="question-map">
+            <p class="label-xs" style="margin-bottom:0.25rem;">Question Map</p>
+            <div id="qmap-grid" class="qmap-grid">
+                <!-- filled by JS -->
+            </div>
+        </div>
 
-  showLoader('Transmitting...');
-  try {
-    const res = await apiCall('submit', { roll_no: state.rollNo, answers: state.answers });
-    if (res.success) {
-      localStorage.removeItem(`aq_${state.rollNo}`);
-      hideLoader(); exitFullscreen();
-      if (isCheat) {
-        $('lock-reason-text').textContent = cheatReason || state.violationReason || 'Multiple security events.';
-        switchSection('locked');
-      } else {
-        const score = res.score ?? 0;
-        const tot   = res.total || state.questions.length;
-        $('score-display').textContent = score;
-        $('total-display').textContent = tot;
-        const ratio = score / tot;
-        if (ratio >= 0.8)     $('score-message').innerHTML = `Outstanding. <span style="color:var(--accent2);font-weight:600;">Cleared for Advanced Operations.</span>`;
-        else if (ratio >= 0.5) $('score-message').innerHTML = `Standard parameters met. Cleared for basic duty.`;
-        else                  $('score-message').innerHTML = `<span style="color:var(--danger);font-weight:600;">Parameters failed. Remedial training required.</span>`;
-        switchSection('result');
-      }
-    } else throw new Error(res.message || 'Transmission failed.');
-  } catch(err) {
-    showToast(err.message, 'error');
-    state.isSubmitting = false;
-    hideLoader();
-  }
-}
+        <!-- Progress stats -->
+        <div style="border:1px solid var(--border);border-radius:0.875rem;padding:0.875rem;background:rgba(0,240,255,0.02);">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+                <p class="label-xs">Progress</p>
+                <span id="completion-percent-desktop" class="font-sci neon-text" style="font-size:0.65rem;font-weight:700;">0%</span>
+            </div>
+            <div class="progress-track">
+                <div id="progress-fill-desktop" class="progress-fill"></div>
+            </div>
+        </div>
+    </aside>
 
-/* ══ TIMER ══ */
-function startTimer() {
-  updateTimerUI();
-  state.timerInterval = setInterval(() => {
-    state.timeLeft--;
-    saveState();
-    updateTimerUI();
-    if (state.timeLeft <= 0) { clearInterval(state.timerInterval); submitQuiz(true); }
-    else if (state.timeLeft === 60) {
-      showToast('⚠ 60 seconds remaining!', 'warning');
-      $('timer-display').classList.add('danger');
+    <!-- ── MAIN PANEL ── -->
+    <div class="quiz-main">
+
+        <!-- Mobile header (shown only on mobile) -->
+        <div class="mobile-header" style="justify-content:space-between;align-items:center;">
+            <div>
+                <p class="label-xs" style="color:#1e3a5f;margin-bottom:0.2rem;">Candidate</p>
+                <div style="display:flex;align-items:center;gap:0.4rem;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success);display:inline-block;"></span>
+                    <span id="display-roll-mobile" class="font-sci" style="font-size:1rem;color:#fff;font-weight:700;letter-spacing:0.1em;">---</span>
+                </div>
+            </div>
+            <div style="text-align:center;border:1px solid rgba(0,240,255,0.2);border-radius:0.75rem;padding:0.375rem 0.875rem;background:rgba(0,240,255,0.04);">
+                <p class="label-xs" style="color:var(--neon);margin-bottom:0.1rem;">Time Left</p>
+                <div id="timer-mobile" class="font-sci neon-text" style="font-size:1.5rem;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;">10:00</div>
+            </div>
+        </div>
+
+        <!-- Progress bar & counter -->
+        <div class="progress-bar-wrap">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+                <span id="question-counter" class="label-xs" style="color:#475569;">Question 1 / X</span>
+                <span id="completion-percent-mobile" class="font-sci neon-text" style="font-size:0.6rem;font-weight:700;letter-spacing:0.1em;">0%</span>
+            </div>
+            <div class="progress-track">
+                <div id="progress-fill-mobile" class="progress-fill"></div>
+            </div>
+        </div>
+
+        <!-- Question + Options -->
+        <div class="question-area custom-scroll" id="question-area">
+
+            <div class="question-card">
+                <img id="question-image" src="" alt="" class="hidden" style="">
+                <p id="question-text">Loading telemetry data...</p>
+            </div>
+
+            <div id="options-container"></div>
+
+        </div>
+
+        <!-- Footer Navigation -->
+        <div class="quiz-footer">
+            <button id="btn-prev" class="btn-nav btn-prev">
+                <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Prev
+            </button>
+            <button id="btn-next" class="btn-nav btn-next">
+                Next
+                <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+            <button id="btn-submit" class="btn-nav btn-submit hidden" style="font-family:'Orbitron',sans-serif;font-size:0.7rem;font-weight:900;letter-spacing:0.12em;">
+                Transmit
+                <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     3. RESULT SECTION
+════════════════════════════════════════ -->
+<section id="result-section" class="section-fade hidden">
+    <div class="result-card glass">
+        <div style="width:72px;height:72px;border-radius:50%;border:1.5px solid rgba(0,255,170,0.35);background:rgba(0,255,170,0.08);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;box-shadow:0 0 30px rgba(0,255,170,0.18);">
+            <svg style="width:36px;height:36px;color:var(--success);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+        <h2 class="font-sci" style="font-size:clamp(1.5rem,5vw,2rem);color:#fff;letter-spacing:0.12em;font-weight:900;line-height:1.2;">Simulation<br>Complete</h2>
+        <p class="label-xs" style="color:#334155;margin-top:0.625rem;margin-bottom:1.75rem;letter-spacing:0.2em;">Data Encrypted & Transmitted</p>
+
+        <div style="border:1px solid rgba(0,240,255,0.2);border-radius:1.25rem;padding:1.5rem;background:rgba(0,240,255,0.03);margin-bottom:1.5rem;">
+            <p class="label-xs" style="margin-bottom:0.375rem;">Final Score</p>
+            <div class="font-sci neon-text" style="font-size:3.5rem;font-weight:900;line-height:1;display:flex;align-items:baseline;justify-content:center;gap:0.25rem;">
+                <span id="score-display">0</span>
+                <span style="font-size:1.5rem;color:#1e3a5f;font-weight:700;">/<span id="total-display">0</span></span>
+            </div>
+            <div style="width:40px;height:2px;background:rgba(0,240,255,0.3);border-radius:999px;margin:0.875rem auto 0.625rem;"></div>
+            <p id="score-message" style="font-size:0.85rem;color:#94a3b8;line-height:1.6;"></p>
+        </div>
+
+        <button onclick="window.location.reload()" class="btn-primary">Terminate Session</button>
+    </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     4. LOCKED SECTION
+════════════════════════════════════════ -->
+<section id="locked-section" class="section-fade hidden">
+    <div class="locked-card glass" style="border-color:rgba(255,42,42,0.35);box-shadow:0 0 60px rgba(255,42,42,0.2);">
+        <div style="position:absolute;inset:0;border-radius:2rem;background:rgba(255,42,42,0.03);pointer-events:none;"></div>
+
+        <div style="position:relative;z-index:1;">
+            <div style="width:72px;height:72px;border-radius:50%;border:1.5px solid rgba(255,42,42,0.35);background:rgba(255,42,42,0.08);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;box-shadow:0 0 30px rgba(255,42,42,0.25);">
+                <svg style="width:34px;height:34px;color:var(--danger);animation:blink 1.5s ease-in-out infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+            </div>
+            <h2 class="font-sci danger-text" style="font-size:clamp(1.5rem,5vw,2rem);letter-spacing:0.15em;font-weight:900;">Session Locked</h2>
+            <p style="color:#64748b;font-size:0.8rem;margin-top:0.5rem;margin-bottom:1.5rem;">Critical security violations detected.</p>
+
+            <div style="background:rgba(15,5,5,0.8);border:1px solid rgba(255,42,42,0.2);border-radius:1rem;padding:1rem;text-align:left;margin-bottom:1.5rem;">
+                <p class="label-xs" style="color:var(--danger);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem;">
+                    <svg style="width:10px;height:10px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Violation Log
+                </p>
+                <p id="lock-reason-text" style="color:#e2e8f0;font-size:0.8rem;line-height:1.6;border-left:2px solid rgba(255,42,42,0.5);padding-left:0.75rem;"></p>
+            </div>
+
+            <div style="background:rgba(255,42,42,0.1);border:1px solid rgba(255,42,42,0.25);border-radius:1rem;padding:1.25rem;box-shadow:0 0 20px rgba(255,42,42,0.1);">
+                <p class="label-xs" style="color:rgba(255,255,255,0.5);margin-bottom:0.25rem;">Override Required</p>
+                <p class="font-sci" style="font-size:1.5rem;color:#fff;font-weight:900;letter-spacing:0.15em;">CALL ADMIN</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     APPLICATION LOGIC
+════════════════════════════════════════ -->
+<script>
+    // ── CONFIG ──
+    const API_URL = "https://script.google.com/macros/s/AKfycbwKC5RH5r5HeoaIga02TCAVPoo3Kk9tIJfHo6p17eUxhCMEZ54-kDSjZ-cRyFbNwIPZ/exec";
+
+    let state = {
+        rollNo: '', questions: [], answers: {},
+        currentIndex: 0, timeLeft: 0,
+        timerInterval: null, isSubmitting: false,
+        tabSwitches: 0, violationReason: ''
+    };
+    let preloadedQuestions = null;
+
+    // ── ELEMENTS ──
+    const $ = id => document.getElementById(id);
+    const sections = {
+        login: $('login-section'), quiz: $('quiz-section'),
+        result: $('result-section'), locked: $('locked-section')
+    };
+
+    // ── API ──
+    async function apiCall(action, payload = {}) {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action, ...payload })
+        });
+        if (!res.ok) throw new Error('Network error');
+        return res.json();
     }
-  }, 1000);
-}
 
-function updateTimerUI() {
-  const m = Math.floor(state.timeLeft / 60);
-  const s = state.timeLeft % 60;
-  $('timer-display').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
+    // ── PRELOAD QUESTIONS ──
+    window.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const data = await apiCall('getQuestions');
+            if (data.success) preloadedQuestions = data.questions;
+        } catch(e) {}
+    });
 
-/* ══ PERSISTENCE ══ */
-function saveState() {
-  if (!state.rollNo) return;
-  localStorage.setItem(`aq_${state.rollNo}`, JSON.stringify({
-    answers: state.answers, timeLeft: state.timeLeft,
-    tabSwitches: state.tabSwitches, violationReason: state.violationReason
-  }));
-}
+    // ── LOGIN ──
+    $('login-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const roll = $('roll-input').value.trim().toUpperCase();
+        if (!roll) return;
+        $('roll-input').blur();
+        requestFullscreen();
+        showLoader('AUTHENTICATING...');
+        try {
+            const res = await apiCall('login', { roll_no: roll });
+            if (res.success) {
+                state.rollNo = roll;
+                setRollDisplay(roll);
+                recoverState(res.time || 10);
+                showToast('Authentication Successful', 'success');
+                const qs = preloadedQuestions || (await apiCall('getQuestions')).questions;
+                if (!qs) throw new Error('No questions found.');
+                processQuiz(qs);
+            } else {
+                showToast(res.message || 'Access Denied', 'error');
+                hideLoader();
+            }
+        } catch(err) {
+            showToast(err.message, 'error');
+            hideLoader();
+        }
+    });
 
-function recoverState(defMin) {
-  const raw = localStorage.getItem(`aq_${state.rollNo}`);
-  if (raw) {
-    try {
-      const p = JSON.parse(raw);
-      state.answers        = p.answers        || {};
-      state.tabSwitches    = p.tabSwitches    || 0;
-      state.violationReason= p.violationReason|| '';
-      state.timeLeft       = (p.timeLeft > 0) ? p.timeLeft : defMin * 60;
-      return;
-    } catch(e) {}
-  }
-  state.timeLeft = defMin * 60;
-}
-
-/* ══ ANTI-CHEAT ══ */
-document.addEventListener('contextmenu', e => e.preventDefault());
-['copy','cut','paste','dragstart','drop'].forEach(ev =>
-  document.addEventListener(ev, e => { e.preventDefault(); return false; })
-);
-document.addEventListener('selectstart', e => {
-  if (e.target.tagName !== 'INPUT') { e.preventDefault(); return false; }
-});
-
-let lastViolation = 0;
-
-function handleViolation(reason) {
-  if (state.isSubmitting || !sections.quiz.classList.contains('active')) return;
-  const now = Date.now();
-  if (now - lastViolation < 1500) return;
-  lastViolation = now;
-  state.tabSwitches++;
-  state.violationReason = reason;
-  saveState();
-  if (state.tabSwitches >= 3) {
-    submitQuiz(false, true, reason);
-  } else {
-    const left = 3 - state.tabSwitches;
-    showToast(`Security Alert — ${left} strike(s) remaining`, 'error');
-  }
-}
-
-const blurEl = $('blur-warning');
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
-    if (!state.isSubmitting && sections.quiz.classList.contains('active')) {
-      sections.quiz.style.visibility = 'hidden';
-      blurEl.classList.add('active');
+    function setRollDisplay(roll) {
+        $('display-roll-desktop').textContent = roll;
+        $('display-roll-mobile').textContent = roll;
     }
-    handleViolation('Application backgrounded or tab switched.');
-  } else {
-    if (state.tabSwitches < 3) {
-      sections.quiz.style.visibility = '';
-      blurEl.classList.remove('active');
+
+    // ── PROCESS QUIZ ──
+    function processQuiz(qs) {
+        state.questions = shuffleArray([...qs]);
+        state.questions.forEach(q => {
+            const opts = [
+                { id: 'A', text: q.optionA }, { id: 'B', text: q.optionB },
+                { id: 'C', text: q.optionC }, { id: 'D', text: q.optionD }
+            ].filter(o => o.text && o.text.toString().trim());
+            q.shuffledOptions = shuffleArray(opts);
+        });
+        buildQuestionMap();
+        hideLoader();
+        switchSection('quiz');
+        startTimer();
+        renderQuestion();
     }
-  }
-});
 
-window.addEventListener('blur', () => {
-  if (!state.isSubmitting && sections.quiz.classList.contains('active')) {
-    sections.quiz.style.visibility = 'hidden';
-    blurEl.classList.add('active');
-  }
-  handleViolation('Focus lost — possible screen capture or overlay detected.');
-});
+    // ── QUESTION MAP (desktop sidebar) ──
+    function buildQuestionMap() {
+        const grid = $('qmap-grid');
+        grid.innerHTML = '';
+        state.questions.forEach((q, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'qmap-btn';
+            btn.textContent = i + 1;
+            btn.dataset.idx = i;
+            btn.addEventListener('click', () => {
+                state.currentIndex = i;
+                renderQuestion();
+            });
+            grid.appendChild(btn);
+        });
+    }
 
-window.addEventListener('focus', () => {
-  if (state.tabSwitches < 3) {
-    sections.quiz.style.visibility = '';
-    blurEl.classList.remove('active');
-  }
-});
+    function updateQuestionMap() {
+        const btns = document.querySelectorAll('.qmap-btn');
+        btns.forEach((btn, i) => {
+            const q = state.questions[i];
+            btn.className = 'qmap-btn';
+            if (state.answers[q.id]) btn.classList.add('answered');
+            if (i === state.currentIndex) btn.classList.add('current');
+        });
+    }
 
-window.addEventListener('beforeunload', e => {
-  if (!state.isSubmitting && state.rollNo &&
-      !sections.result.classList.contains('active') &&
-      !sections.locked.classList.contains('active')) {
-    e.preventDefault(); e.returnValue = '';
-  }
-});
+    // ── RENDER ──
+    function renderQuestion() {
+        const q = state.questions[state.currentIndex];
+        const total = state.questions.length;
 
-/* ══ UTILITIES ══ */
-function switchSection(id) {
-  Object.values(sections).forEach(s => s.classList.remove('active'));
-  blurEl.classList.remove('active');
-  sections[id].classList.add('active');
-  sections[id].style.opacity = '0';
-  requestAnimationFrame(() => {
-    sections[id].style.transition = 'opacity 0.4s ease';
-    sections[id].style.opacity = '1';
-  });
-}
+        $('question-counter').textContent = `Question ${state.currentIndex + 1} / ${total}`;
+        const answered = Object.keys(state.answers).length;
+        const pct = Math.round((answered / total) * 100);
+        $('completion-percent-desktop').textContent = pct + '%';
+        $('completion-percent-mobile').textContent = pct + '%';
+        $('progress-fill-desktop').style.width = pct + '%';
+        $('progress-fill-mobile').style.width = pct + '%';
 
-function showLoader(msg) {
-  $('loader-text').textContent = msg;
-  $('loader-overlay').classList.add('active');
-}
-function hideLoader() { $('loader-overlay').classList.remove('active'); }
+        $('question-text').textContent = q.question;
 
-function showToast(msg, type = 'info') {
-  const container = $('toast-container');
-  const t = document.createElement('div');
-  const icon = type === 'error' ? '⚠' : type === 'success' ? '✓' : type === 'warning' ? '⏱' : 'ℹ';
-  t.className = `toast ${type}`;
-  t.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-msg">${msg}</span>`;
-  container.appendChild(t);
-  setTimeout(() => {
-    t.classList.add('exiting');
-    setTimeout(() => t.remove(), 350);
-  }, 4500);
-}
+        const img = $('question-image');
+        if (q.image && q.image.trim()) {
+            img.src = q.image.trim();
+            img.classList.remove('hidden');
+        } else {
+            img.src = ''; img.classList.add('hidden');
+        }
 
-function shuffleArray(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
+        $('options-container').innerHTML = '';
+        const letters = ['A', 'B', 'C', 'D'];
+        q.shuffledOptions.forEach((opt, idx) => {
+            const checked = state.answers[q.id] === opt.id ? 'checked' : '';
+            $('options-container').insertAdjacentHTML('beforeend', `
+                <label class="option-label">
+                    <input type="radio" name="q_${q.id}" value="${opt.id}" class="option-input" ${checked}
+                           onchange="selectAnswer('${q.id}','${opt.id}')">
+                    <div class="option-box">
+                        <div class="radio-outer"><div class="radio-inner"></div></div>
+                        <span class="option-letter">${letters[idx]}</span>
+                        <span class="option-text">${opt.text}</span>
+                    </div>
+                </label>
+            `);
+        });
 
-function requestFullscreen() {
-  const el = document.documentElement;
-  (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el);
-}
-function exitFullscreen() {
-  (document.exitFullscreen || document.webkitExitFullscreen || (() => {})).call(document);
-}
+        $('question-area').scrollTop = 0;
+
+        // Prev button
+        $('btn-prev').disabled = state.currentIndex === 0;
+
+        // Next / Submit toggle
+        if (state.currentIndex === total - 1) {
+            $('btn-next').classList.add('hidden');
+            $('btn-submit').classList.remove('hidden');
+        } else {
+            $('btn-next').classList.remove('hidden');
+            $('btn-submit').classList.add('hidden');
+        }
+
+        checkSubmit();
+        updateQuestionMap();
+    }
+
+    window.selectAnswer = function(qId, opt) {
+        state.answers[qId] = opt;
+        saveState();
+        checkSubmit();
+        updateQuestionMap();
+        const total = state.questions.length;
+        const answered = Object.keys(state.answers).length;
+        const pct = Math.round((answered / total) * 100);
+        $('completion-percent-desktop').textContent = pct + '%';
+        $('completion-percent-mobile').textContent = pct + '%';
+        $('progress-fill-desktop').style.width = pct + '%';
+        $('progress-fill-mobile').style.width = pct + '%';
+    };
+
+    function checkSubmit() {
+        const done = Object.keys(state.answers).length === state.questions.length;
+        $('btn-submit').disabled = !done;
+        $('btn-submit').classList.toggle('pulse', done);
+    }
+
+    $('btn-next').addEventListener('click', () => {
+        if (state.currentIndex < state.questions.length - 1) {
+            state.currentIndex++;
+            renderQuestion();
+        }
+    });
+
+    $('btn-prev').addEventListener('click', () => {
+        if (state.currentIndex > 0) {
+            state.currentIndex--;
+            renderQuestion();
+        }
+    });
+
+    $('btn-submit').addEventListener('click', () => submitQuiz(false));
+
+    // ── SUBMIT ──
+    async function submitQuiz(isAuto = false, isCheat = false, reason = '') {
+        if (state.isSubmitting) return;
+        state.isSubmitting = true;
+        clearInterval(state.timerInterval);
+        if (isCheat) state.answers = {};
+        else if (isAuto) showToast('Time Expired! Auto-submitting...', 'warning');
+        showLoader('TRANSMITTING DATA...');
+        try {
+            const res = await apiCall('submit', { roll_no: state.rollNo, answers: state.answers });
+            if (res.success) {
+                localStorage.removeItem(`aeroQuiz_${state.rollNo}`);
+                hideLoader(); exitFullscreen();
+                if (isCheat) {
+                    $('lock-reason-text').textContent = reason || state.violationReason || 'Multiple security violations.';
+                    switchSection('locked');
+                } else {
+                    $('score-display').textContent = res.score;
+                    $('total-display').textContent = res.total || state.questions.length;
+                    const r = res.score / (res.total || state.questions.length);
+                    if (r >= 0.8) $('score-message').innerHTML = 'Outstanding Performance. <span style="color:var(--neon);font-weight:700;">Cleared for Advanced Operations.</span>';
+                    else if (r >= 0.5) $('score-message').textContent = 'Standard Parameters Met.';
+                    else $('score-message').innerHTML = '<span style="color:var(--danger);font-weight:700;">Parameters Failed. Remedial training required.</span>';
+                    switchSection('result');
+                }
+            } else { throw new Error(res.message || 'Transmission failed.'); }
+        } catch(err) {
+            showToast(err.message, 'error');
+            state.isSubmitting = false;
+            hideLoader();
+        }
+    }
+
+    // ── TIMER ──
+    function startTimer() {
+        updateTimer();
+        state.timerInterval = setInterval(() => {
+            state.timeLeft--;
+            saveState(); updateTimer();
+            if (state.timeLeft <= 0) { clearInterval(state.timerInterval); submitQuiz(true); }
+            else if (state.timeLeft === 60) {
+                showToast('WARNING: 60 SECONDS REMAINING', 'warning');
+                [$('timer-desktop'), $('timer-mobile')].forEach(el => {
+                    el.style.color = 'var(--danger)';
+                    el.style.textShadow = '0 0 12px rgba(255,42,42,0.7)';
+                    el.style.animation = 'blink 1s ease-in-out infinite';
+                });
+            }
+        }, 1000);
+    }
+
+    function updateTimer() {
+        const m = Math.floor(state.timeLeft / 60).toString().padStart(2, '0');
+        const s = (state.timeLeft % 60).toString().padStart(2, '0');
+        const txt = `${m}:${s}`;
+        $('timer-desktop').textContent = txt;
+        $('timer-mobile').textContent = txt;
+    }
+
+    // ── STATE ──
+    function saveState() {
+        if (!state.rollNo) return;
+        localStorage.setItem(`aeroQuiz_${state.rollNo}`, JSON.stringify({
+            answers: state.answers, timeLeft: state.timeLeft,
+            tabSwitches: state.tabSwitches, violationReason: state.violationReason
+        }));
+    }
+
+    function recoverState(def) {
+        const saved = localStorage.getItem(`aeroQuiz_${state.rollNo}`);
+        if (saved) {
+            try {
+                const p = JSON.parse(saved);
+                state.answers = p.answers || {};
+                state.tabSwitches = p.tabSwitches || 0;
+                state.violationReason = p.violationReason || '';
+                state.timeLeft = p.timeLeft > 0 ? p.timeLeft : def * 60;
+            } catch(e) { state.timeLeft = def * 60; }
+        } else { state.timeLeft = def * 60; }
+    }
+
+    // ── ANTI-CHEAT ──
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    ['copy','cut','paste','dragstart','drop'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
+    document.addEventListener('selectstart', e => { if (e.target.tagName !== 'INPUT') e.preventDefault(); });
+
+    let lastViolation = 0;
+
+    function securityViolation(reason) {
+        if (state.isSubmitting || sections.quiz.classList.contains('hidden')) return;
+        const now = Date.now();
+        if (now - lastViolation < 1500) return;
+        lastViolation = now;
+        state.tabSwitches++;
+        state.violationReason = reason;
+        saveState();
+        if (state.tabSwitches >= 3) { submitQuiz(false, true, reason); }
+        else {
+            const left = 3 - state.tabSwitches;
+            showToast(`SECURITY ALERT: ${reason} — ${left} strike(s) left`, 'error');
+        }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            if (!state.isSubmitting && !sections.quiz.classList.contains('hidden')) {
+                sections.quiz.style.visibility = 'hidden';
+                $('blur-warning').classList.remove('hidden');
+            }
+            securityViolation('Application backgrounded or tab switched.');
+        } else {
+            if (state.tabSwitches < 3) {
+                sections.quiz.style.visibility = 'visible';
+                $('blur-warning').classList.add('hidden');
+            }
+        }
+    });
+
+    window.addEventListener('blur', () => {
+        if (!state.isSubmitting && !sections.quiz.classList.contains('hidden')) {
+            sections.quiz.style.visibility = 'hidden';
+            $('blur-warning').classList.remove('hidden');
+        }
+        securityViolation('Focus lost — possible screen capture or AI overlay.');
+    });
+
+    window.addEventListener('focus', () => {
+        if (state.tabSwitches < 3) {
+            sections.quiz.style.visibility = 'visible';
+            $('blur-warning').classList.add('hidden');
+        }
+    });
+
+    window.addEventListener('beforeunload', e => {
+        if (!state.isSubmitting && state.rollNo && sections.result.classList.contains('hidden') && sections.locked.classList.contains('hidden')) {
+            e.preventDefault(); e.returnValue = '';
+        }
+    });
+
+    // ── FULLSCREEN ──
+    function requestFullscreen() {
+        const el = document.documentElement;
+        (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el);
+    }
+    function exitFullscreen() {
+        (document.exitFullscreen || document.webkitExitFullscreen || (() => {})).call(document);
+    }
+
+    // ── UI HELPERS ──
+    function switchSection(id) {
+        Object.values(sections).forEach(s => {
+            s.classList.add('hidden');
+            s.style.opacity = '0';
+        });
+        const sec = sections[id];
+        sec.classList.remove('hidden');
+        $('blur-warning').classList.add('hidden');
+        requestAnimationFrame(() => {
+            sec.style.transition = 'opacity 0.4s ease';
+            sec.style.opacity = '1';
+        });
+    }
+
+    function showLoader(text) {
+        $('loader-text').textContent = text;
+        $('loader-overlay').classList.remove('hidden');
+    }
+
+    function hideLoader() {
+        $('loader-overlay').classList.add('hidden');
+    }
+
+    function showToast(msg, type = 'info') {
+        const tc = $('toast-container');
+        const t = document.createElement('div');
+        const themes = {
+            error:   'border:1px solid rgba(255,42,42,0.4);background:rgba(20,5,5,0.95);color:#fca5a5;',
+            warning: 'border:1px solid rgba(255,160,0,0.4);background:rgba(20,15,5,0.95);color:#fcd34d;',
+            success: 'border:1px solid rgba(0,255,170,0.3);background:rgba(5,20,15,0.95);color:#6ee7b7;',
+            info:    'border:1px solid rgba(0,240,255,0.3);background:rgba(5,15,25,0.95);color:#67e8f9;'
+        };
+        const icons = { error:'⚠️', warning:'⚡', success:'✅', info:'ℹ️' };
+        t.className = 'toast';
+        t.style.cssText = themes[type] || themes.info;
+        t.innerHTML = `<span style="font-size:1rem;flex-shrink:0;">${icons[type]||'ℹ️'}</span>
+            <span style="font-size:0.72rem;font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;line-height:1.5;">${msg}</span>`;
+        tc.appendChild(t);
+        setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 350); }, 4200);
+    }
+
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
 </script>
 </body>
 </html>
