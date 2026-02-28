@@ -1,0 +1,47 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "*.html",
+            "use": "@vercel/static"
+        },
+        {
+            "src": "*.json",
+            "use": "@vercel/static"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "/$1"
+        }
+    ],
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "X-Frame-Options",
+                    "value": "DENY"
+                },
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                },
+                {
+                    "key": "Cache-Control",
+                    "value": "no-store"
+                }
+            ]
+        },
+        {
+            "source": "/questions.json",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=3600"
+                }
+            ]
+        }
+    ]
+}
