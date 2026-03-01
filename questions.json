@@ -144,7 +144,7 @@
   },
   {
     "id": "q14",
-    "question": "Let $f(x) = \\log(x^3 + 2x^2 - 3x + 100)$. Find $f'(3)$.",
+    "question": "Let $f(x) = \\log x^3 + 2x^2 - 3x + 100 $. Find $f'(3)$.",
     "equation": "",
     "image": "",
     "optionA": "12",
