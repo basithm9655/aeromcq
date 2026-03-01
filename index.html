@@ -1444,7 +1444,8 @@
         display: flex;
       }
 
-      .mobile-header {
+      .mobile-header,
+      .mobile-qmap-wrap {
         display: none !important;
       }
 
@@ -1484,6 +1485,21 @@
 
       #question-text {
         font-size: 1.2rem;
+      }
+    }
+
+    /* Disable custom cursor on touch devices */
+    @media (hover: none) and (pointer: coarse) {
+      * {
+        cursor: auto !important;
+      }
+
+      body {
+        cursor: auto !important;
+      }
+
+      #sci-cursor {
+        display: none !important;
       }
     }
   </style>
@@ -1741,6 +1757,35 @@
           <div id="equation-display" class="hidden"></div>
         </div>
         <div id="options-container"></div>
+
+        <!-- Mobile Question Map & Stats -->
+        <div class="mobile-qmap-wrap" style="margin-top:2rem;">
+          <div
+            style="height:1px;background:linear-gradient(90deg, transparent, rgba(0,240,255,0.2), transparent);margin-bottom:1.5rem;">
+          </div>
+          <p class="label-xs" style="margin-bottom:0.75rem;text-align:center;">Question Map</p>
+          <div id="qmap-grid-mobile" class="qmap-grid" style="margin-bottom:1.5rem; justify-content:center;"></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.4rem;margin-bottom:0.5rem;">
+            <div
+              style="text-align:center;border:1px solid rgba(0,240,255,0.15);border-radius:0.4rem;padding:0.5rem;background:rgba(0,240,255,0.03);">
+              <div id="stat-answered-mobile" class="font-sci neon-text" style="font-size:1.1rem;font-weight:900;">0
+              </div>
+              <div class="label-xs" style="font-size:0.45rem;color:#1e3a5f;">ANS</div>
+            </div>
+            <div
+              style="text-align:center;border:1px solid rgba(255,200,0,0.2);border-radius:0.4rem;padding:0.5rem;background:rgba(255,200,0,0.03);">
+              <div id="stat-flagged-mobile" class="font-sci" style="font-size:1.1rem;font-weight:900;color:#ffd700;">0
+              </div>
+              <div class="label-xs" style="font-size:0.45rem;color:#1e3a5f;">FLAG</div>
+            </div>
+            <div
+              style="text-align:center;border:1px solid rgba(255,255,255,0.08);border-radius:0.4rem;padding:0.5rem;background:rgba(255,255,255,0.02);">
+              <div id="stat-unanswered-mobile" class="font-sci" style="font-size:1.1rem;font-weight:900;color:#475569;">
+                0</div>
+              <div class="label-xs" style="font-size:0.45rem;color:#1e3a5f;">LEFT</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Footer -->
@@ -2166,7 +2211,8 @@
 
     // ── PROCESS QUIZ ─────────────────────────────────────
     function processQuiz(qs) {
-      state.questions = shuffleArray([...qs]);
+      // Shuffle and strictly take only 20 questions
+      state.questions = shuffleArray([...qs]).slice(0, 20);
       state.questions.forEach(q => {
         const opts = [
           { id: 'A', text: q.optionA },
@@ -2187,23 +2233,33 @@
     // ── QUESTION MAP ─────────────────────────────────────
     function buildQMap() {
       const grid = $('qmap-grid');
+      const gridMobile = $('qmap-grid-mobile') || document.createElement('div');
       grid.innerHTML = '';
+      if (gridMobile) gridMobile.innerHTML = '';
+
       state.questions.forEach((q, i) => {
-        const btn = document.createElement('button');
-        btn.className = 'qmap-btn';
-        btn.textContent = i + 1;
-        btn.addEventListener('click', () => { state.currentIndex = i; renderQuestion(); });
-        grid.appendChild(btn);
+        const createBtn = () => {
+          const btn = document.createElement('button');
+          btn.className = 'qmap-btn';
+          btn.textContent = i + 1;
+          btn.addEventListener('click', () => { state.currentIndex = i; renderQuestion(); });
+          return btn;
+        };
+        grid.appendChild(createBtn());
+        if (gridMobile) gridMobile.appendChild(createBtn());
       });
     }
     function updateQMap() {
-      document.querySelectorAll('.qmap-btn').forEach((btn, i) => {
-        const q = state.questions[i];
-        btn.className = 'qmap-btn';
-        if (state.visited.has(q.id) && state.answers[q.id] === undefined) btn.classList.add('visited');
-        if (state.answers[q.id] !== undefined) btn.classList.add('answered');
-        if (state.flagged.has(q.id)) btn.classList.add('flagged');
-        if (i === state.currentIndex) btn.classList.add('current');
+      // Update both desktop and mobile qmap buttons simultaneously
+      document.querySelectorAll('.qmap-grid').forEach(grid => {
+        grid.querySelectorAll('.qmap-btn').forEach((btn, i) => {
+          const q = state.questions[i];
+          btn.className = 'qmap-btn';
+          if (state.visited.has(q.id) && state.answers[q.id] === undefined) btn.classList.add('visited');
+          if (state.answers[q.id] !== undefined) btn.classList.add('answered');
+          if (state.flagged.has(q.id)) btn.classList.add('flagged');
+          if (i === state.currentIndex) btn.classList.add('current');
+        });
       });
     }
 
@@ -2297,9 +2353,16 @@
       const answered = Object.keys(state.answers).length;
       const flagged = state.flagged.size;
       const left = total - answered;
+
+      // Desktop stats
       if ($('stat-answered')) $('stat-answered').textContent = answered;
       if ($('stat-flagged')) $('stat-flagged').textContent = flagged;
       if ($('stat-unanswered')) $('stat-unanswered').textContent = left;
+
+      // Mobile stats
+      if ($('stat-answered-mobile')) $('stat-answered-mobile').textContent = answered;
+      if ($('stat-flagged-mobile')) $('stat-flagged-mobile').textContent = flagged;
+      if ($('stat-unanswered-mobile')) $('stat-unanswered-mobile').textContent = left;
     }
 
     $('btn-flag').addEventListener('click', () => {
