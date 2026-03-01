@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>AeroQuest — Aerospace MCQ</title>
+  <link rel="icon" type="image/png" href="./logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -18,7 +19,18 @@
     window.MathJax = {
       tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
       svg: { fontCache: 'global' },
-      startup: { typeset: false }
+      startup: {
+        typeset: false,
+        ready() {
+          MathJax.startup.defaultReady();
+          // Re-typeset the current question once MathJax finishes loading asynchronously
+          const qText = document.getElementById('question-text');
+          const opts = document.getElementById('options-container');
+          const eqDiv = document.getElementById('equation-display');
+          const targets = [qText, opts, eqDiv].filter(Boolean);
+          if (targets.length) MathJax.typesetPromise(targets);
+        }
+      }
     };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
@@ -52,12 +64,16 @@
       touch-action: pan-y;
       height: 100dvh;
       width: 100%;
+      cursor: none;
+      /* Hide default cursor for custom sci-fi cursor */
     }
 
     * {
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
+      cursor: none !important;
+      /* Force custom cursor on all elements */
     }
 
     /* GRID BG */
@@ -196,6 +212,143 @@
     .success-text {
       color: var(--success);
       text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+    }
+
+    /* GLITCH EFFECT — clip-path based, constrained within card */
+    .glitch-text {
+      position: relative;
+      display: inline-block;
+      overflow: visible;
+      margin: 0 auto;
+    }
+
+    .glitch-text::before,
+    .glitch-text::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /* No overflow hidden here anymore to let padding/shadow work */
+    }
+
+    .glitch-text::before {
+      left: 3px;
+      color: var(--danger);
+      animation: glitch-before 2.5s infinite steps(1);
+      opacity: 0.85;
+    }
+
+    .glitch-text::after {
+      left: -3px;
+      color: var(--neon);
+      animation: glitch-after 3.5s infinite steps(1);
+      opacity: 0.85;
+    }
+
+    @keyframes glitch-before {
+      0% {
+        clip-path: inset(0 0 95% 0);
+        transform: translateX(0);
+      }
+
+      10% {
+        clip-path: inset(30% 0 50% 0);
+        transform: translateX(4px);
+      }
+
+      20% {
+        clip-path: inset(70% 0 10% 0);
+        transform: translateX(-3px);
+      }
+
+      30% {
+        clip-path: inset(10% 0 80% 0);
+        transform: translateX(2px);
+      }
+
+      40% {
+        clip-path: inset(50% 0 40% 0);
+        transform: translateX(-4px);
+      }
+
+      50% {
+        clip-path: inset(80% 0 5% 0);
+        transform: translateX(3px);
+      }
+
+      60% {
+        clip-path: inset(20% 0 70% 0);
+        transform: translateX(0);
+      }
+
+      70% {
+        clip-path: inset(60% 0 25% 0);
+        transform: translateX(-2px);
+      }
+
+      80% {
+        clip-path: inset(5% 0 90% 0);
+        transform: translateX(4px);
+      }
+
+      90% {
+        clip-path: inset(40% 0 55% 0);
+        transform: translateX(-1px);
+      }
+
+      100% {
+        clip-path: inset(0 0 95% 0);
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes glitch-after {
+      0% {
+        clip-path: inset(85% 0 0 0);
+        transform: translateX(0);
+      }
+
+      12% {
+        clip-path: inset(5% 0 75% 0);
+        transform: translateX(-4px);
+      }
+
+      24% {
+        clip-path: inset(55% 0 35% 0);
+        transform: translateX(3px);
+      }
+
+      36% {
+        clip-path: inset(15% 0 80% 0);
+        transform: translateX(-2px);
+      }
+
+      48% {
+        clip-path: inset(75% 0 10% 0);
+        transform: translateX(4px);
+      }
+
+      60% {
+        clip-path: inset(25% 0 65% 0);
+        transform: translateX(-3px);
+      }
+
+      72% {
+        clip-path: inset(65% 0 20% 0);
+        transform: translateX(2px);
+      }
+
+      84% {
+        clip-path: inset(45% 0 45% 0);
+        transform: translateX(-4px);
+      }
+
+      100% {
+        clip-path: inset(85% 0 0 0);
+        transform: translateX(0);
+      }
     }
 
     .label-xs {
@@ -454,6 +607,144 @@
       transform: scale(0.97);
     }
 
+    /* CUSTOM CURSOR — Neon Arrow */
+    #sci-cursor {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 10000;
+      /* Arrow shape using clip-path on a neon block */
+      width: 20px;
+      height: 24px;
+      background: transparent;
+      transform: translate(0, 0);
+      /* Arrow starts at tip, no centering offset */
+    }
+
+    #sci-cursor svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 4px var(--neon)) drop-shadow(0 0 10px rgba(0, 240, 255, 0.5));
+      transition: filter 0.18s;
+    }
+
+    body.cursor-hover #sci-cursor svg {
+      filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px var(--neon));
+    }
+
+    /* TERMINAL OVERLAY */
+    #terminal-overlay {
+      position: fixed;
+      inset: 0;
+      background: #010306;
+      z-index: 8500;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3rem;
+      font-family: 'Orbitron', monospace;
+      color: var(--success);
+      text-shadow: 0 0 10px var(--success);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+
+    #terminal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .terminal-line {
+      font-size: 1.2rem;
+      margin-bottom: 0.8rem;
+      min-height: 1.5rem;
+      white-space: pre-wrap;
+    }
+
+    /* Terminal special lines */
+    .terminal-access {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      min-height: 1.5rem;
+      white-space: pre-wrap;
+      color: #00ffaa;
+      text-shadow: 0 0 18px #00ffaa, 0 0 40px rgba(0, 255, 170, 0.4);
+      letter-spacing: 0.2em;
+      font-weight: 700;
+    }
+
+    .terminal-welcome {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.08em;
+      margin: 1rem 0 0.75rem;
+      line-height: 1.2;
+    }
+
+    .terminal-name {
+      color: var(--neon);
+      text-shadow: 0 0 20px var(--neon), 0 0 50px rgba(0, 240, 255, 0.4);
+    }
+
+    .terminal-badges {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin: 0.5rem 0 1.5rem;
+    }
+
+    .t-badge {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 0.625rem;
+      padding: 0.6rem 1rem;
+      background: rgba(0, 240, 255, 0.04);
+      min-width: 100px;
+    }
+
+    .t-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: rgba(0, 240, 255, 0.55);
+      text-transform: uppercase;
+    }
+
+    .t-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.05em;
+    }
+
+    .terminal-cursor {
+      display: inline-block;
+      width: 10px;
+      height: 1.2rem;
+      background: var(--success);
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+      margin-left: 4px;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+
     /* LOGIN SECTION */
     #login-section {
       position: absolute;
@@ -470,6 +761,7 @@
       max-width: 440px;
       border-radius: 2rem;
       padding: clamp(1.5rem, 5vw, 2.5rem);
+      overflow-x: hidden;
     }
 
     .login-badge {
@@ -505,14 +797,15 @@
 
     /* SIDEBAR */
     .quiz-sidebar {
-      width: 280px;
+      width: 300px;
       flex-shrink: 0;
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       padding: 1.75rem 1.5rem;
       gap: 1.25rem;
-      background: linear-gradient(180deg, rgba(6, 14, 28, 0.9) 0%, rgba(3, 7, 12, 0.98) 100%);
+      background: linear-gradient(180deg, rgba(6, 14, 28, 0.95) 0%, rgba(3, 7, 12, 0.99) 100%);
+      overflow-y: auto;
     }
 
     .candidate-card {
@@ -566,6 +859,12 @@
       border-color: rgba(0, 240, 255, 0.5);
       background: rgba(0, 240, 255, 0.1);
       color: var(--neon);
+    }
+
+    .qmap-btn.visited {
+      border-color: rgba(255, 140, 0, 0.55);
+      color: rgba(255, 140, 0, 0.9);
+      background: rgba(255, 140, 0, 0.05);
     }
 
     .qmap-btn.flagged {
@@ -646,6 +945,11 @@
       line-height: 1.65;
       font-weight: 500;
       color: #e2e8f0;
+      padding: 1rem 1.25rem;
+      background: rgba(0, 240, 255, 0.03);
+      border-left: 3px solid var(--neon);
+      border-radius: 0 0.5rem 0.5rem 0;
+      box-shadow: inset 10px 0 20px -10px rgba(0, 240, 255, 0.1);
     }
 
     #question-image {
@@ -674,7 +978,7 @@
     #options-container {
       display: flex;
       flex-direction: column;
-      gap: 0.625rem;
+      gap: 0.75rem;
       flex-shrink: 0;
     }
 
@@ -691,11 +995,13 @@
       display: flex;
       align-items: center;
       gap: 0.875rem;
-      padding: 0.875rem 1rem;
+      padding: 1rem 1.25rem;
       border-radius: 0.875rem;
-      border: 1.5px solid #1e293b;
-      background: rgba(15, 23, 42, 0.4);
-      transition: border-color 0.22s, background 0.22s, box-shadow 0.22s, transform 0.15s;
+      border: 1px solid rgba(30, 41, 59, 0.8);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
       min-height: 56px;
       position: relative;
       overflow: hidden;
@@ -705,14 +1011,16 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.03), transparent);
+      background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.08), transparent);
       transform: translateX(-100%);
-      transition: transform 0.4s;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .option-box:hover {
-      border-color: rgba(0, 240, 255, 0.3);
-      background: rgba(0, 240, 255, 0.04);
+      border-color: rgba(0, 240, 255, 0.4);
+      background: rgba(0, 240, 255, 0.06);
+      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.05);
+      transform: translateY(-2px);
     }
 
     .option-box:hover::before {
@@ -725,20 +1033,21 @@
 
     .option-input:checked+.option-box {
       border-color: var(--neon);
-      background: rgba(0, 240, 255, 0.09);
-      box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.07), 0 4px 16px rgba(0, 0, 0, 0.5);
+      background: rgba(0, 240, 255, 0.12);
+      box-shadow: inset 0 0 24px rgba(0, 240, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.6);
+      transform: translateY(-2px) scale(1.02);
     }
 
     .radio-outer {
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
       flex-shrink: 0;
       border-radius: 50%;
-      border: 2px solid #334155;
+      border: 2px solid #475569;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: border-color 0.22s, box-shadow 0.22s;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     .radio-inner {
@@ -806,6 +1115,56 @@
       color: #ffd700;
       background: rgba(255, 200, 0, 0.08);
       box-shadow: 0 0 10px rgba(255, 200, 0, 0.15);
+    }
+
+    /* QUESTION MAP GRID (Sidebar) */
+    .qmap-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .qmap-btn {
+      aspect-ratio: 1;
+      border-radius: 0.375rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(15, 23, 42, 0.6);
+      color: #94a3b8;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .qmap-btn:hover {
+      border-color: rgba(0, 240, 255, 0.4);
+      color: #fff;
+      background: rgba(0, 240, 255, 0.05);
+    }
+
+    .qmap-btn.answered {
+      border-color: var(--success);
+      color: var(--success);
+      background: rgba(0, 255, 170, 0.05);
+      box-shadow: inset 0 0 8px rgba(0, 255, 170, 0.1);
+    }
+
+    .qmap-btn.flagged {
+      border-color: #ffd700;
+      color: #ffd700;
+      background: rgba(255, 200, 0, 0.05);
+    }
+
+    .qmap-btn.current {
+      border-color: var(--neon);
+      color: #fff;
+      background: rgba(0, 240, 255, 0.15);
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
     }
 
     /* FOOTER NAV */
@@ -1090,11 +1449,19 @@
       }
 
       .progress-bar-wrap {
-        padding: 1rem 2rem 0;
+        display: none;
+      }
+
+      .quiz-main {
+        max-width: 900px;
+        margin: 0 auto;
+        border-left: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+        background: rgba(3, 7, 12, 0.4);
       }
 
       .question-area {
-        padding: 1.75rem 2rem 1.25rem;
+        padding: 2rem 3rem;
         gap: 1.5rem;
       }
 
@@ -1123,6 +1490,17 @@
 </head>
 
 <body>
+
+  <!-- SCI-FI NEON CURSOR -->
+  <div id="sci-cursor">
+    <svg viewBox="0 0 18 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer stroke arrow: slim, sharp sci-fi pointer -->
+      <polygon points="1,1 1,20 5.5,15.5 9,24 11.5,22.8 8,14.2 15,14.2" fill="rgba(0,240,255,0.08)" stroke="#00f0ff"
+        stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+      <!-- Tip accent dot -->
+      <circle cx="1" cy="1" r="1.5" fill="#00f0ff" opacity="0.9" />
+    </svg>
+  </div>
 
   <div class="grid-bg"></div>
   <div class="aurora"></div>
@@ -1170,13 +1548,17 @@
 
   <!-- ═══════ LOGIN ═══════ -->
   <section id="login-section" class="section-fade">
-    <div class="login-card glass">
+    <div class="login-card glass" style="overflow:hidden;">
+      <!-- HERO -->
       <div
-        style="text-align:center;margin-bottom:1.75rem;display:flex;flex-direction:column;align-items:center;gap:1rem;">
-        <div class="login-badge"><span class="badge-dot"></span>MCQ Assessment Portal</div>
-        <h1 class="font-sci neon-text"
-          style="font-size:clamp(1.8rem,7vw,2.5rem);letter-spacing:0.2em;font-weight:900;line-height:1;">AEROQUEST</h1>
-        <p class="label-xs" style="color:#1e3a5f;letter-spacing:0.25em;">Candidate Authentication System</p>
+        style="text-align:center;margin-bottom:2rem;display:flex;flex-direction:column;align-items:center;gap:0.75rem;">
+        <img src="./logo.png" alt="Aerospace Association Logo"
+          style="width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 0 12px rgba(0,240,255,0.5));">
+        <h1 class="font-sci neon-text glitch-text"
+          style="font-size:clamp(2rem,8vw,3rem);font-weight:900;letter-spacing:0.1em;text-align:center;padding-right:0.1em;margin-right:-0.1em;white-space:nowrap;"
+          data-text="AEROQUEST">AEROQUEST</h1>
+        <p class="font-sci" style="color:#475569;font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;">
+          Aeronautical Examination Protocol</p>
       </div>
       <form id="login-form" style="display:flex;flex-direction:column;gap:1.25rem;">
         <div style="display:flex;flex-direction:column;gap:0.5rem;">
@@ -1211,73 +1593,90 @@
     </div>
   </section>
 
+  <!-- TERMINAL SEQUENCE OVERLAY -->
+  <div id="terminal-overlay" class="hidden">
+    <div id="terminal-content"></div>
+    <div class="terminal-cursor" id="term-cursor"></div>
+  </div>
+
   <!-- ═══════ QUIZ ═══════ -->
   <section id="quiz-section" class="section-fade hidden" style="background:rgba(3,7,12,0.5);">
 
     <!-- SIDEBAR -->
-    <aside class="quiz-sidebar">
-      <div>
-        <p class="label-xs" style="color:#1e3a5f;">Assessment Portal</p>
-        <h1 class="font-sci neon-text" style="font-size:1.3rem;letter-spacing:0.15em;font-weight:900;line-height:1;">
-          AEROQUEST</h1>
-        <div
-          style="height:1px;background:linear-gradient(90deg,var(--neon),transparent);margin-top:0.375rem;opacity:0.3;">
+    <aside class="quiz-sidebar" style="padding:1rem;gap:0.75rem;">
+      <!-- Association Logo -->
+      <div
+        style="display:flex;align-items:center;gap:0.5rem;padding-bottom:0.5rem;border-bottom:1px solid rgba(0,240,255,0.1);">
+        <img src="./logo.png" alt="Aerospace Association Logo"
+          style="width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(0,240,255,0.4));">
+        <div>
+          <div class="label-xs" style="color:var(--neon);letter-spacing:0.1em;">AeroQuest</div>
+          <div style="font-size:0.55rem;color:#475569;font-family:'Rajdhani',sans-serif;">MCQ Portal</div>
         </div>
       </div>
       <!-- Student Info -->
-      <div class="candidate-card">
-        <p class="label-xs" style="margin-bottom:0.625rem;">Candidate</p>
-        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.375rem;">
-          <span class="candidate-status"></span>
+      <div class="candidate-card" style="padding:0.75rem;margin-bottom:0;gap:0.25rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+          <p class="label-xs" style="margin:0;">Candidate</p>
+          <span style="font-size:0.55rem;color:var(--success);font-weight:700;">ACTIVE</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+          <span class="candidate-status" style="width:6px;height:6px;"></span>
           <span id="display-name-desktop" class="font-sci"
-            style="font-size:0.95rem;color:#fff;font-weight:700;letter-spacing:0.05em;">---</span>
+            style="font-size:0.8rem;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">---</span>
         </div>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
-          <span id="display-roll-desktop"
-            style="font-size:0.7rem;color:var(--neon);font-family:'Orbitron',sans-serif;font-weight:700;background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.2);padding:0.2rem 0.5rem;border-radius:0.4rem;"></span>
-        </div>
-        <div style="margin-top:0.625rem;" class="sep"></div>
-        <div style="margin-top:0.625rem;display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;">
-          <div>
-            <p class="label-xs" style="margin-bottom:0.2rem;">Year</p>
-            <p id="display-year-desktop" style="font-size:0.75rem;color:#94a3b8;font-weight:600;">---</p>
-          </div>
-          <div>
-            <p class="label-xs" style="margin-bottom:0.2rem;">Dept</p>
-            <p id="display-dept-desktop" style="font-size:0.75rem;color:#94a3b8;font-weight:600;">---</p>
-          </div>
-        </div>
-        <div style="margin-top:0.5rem;display:flex;justify-content:space-between;align-items:center;">
-          <p class="label-xs">Status</p>
-          <span
-            style="font-size:0.65rem;color:var(--success);font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:0.1em;">ACTIVE</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.65rem;">
+          <span id="display-roll-desktop" style="color:var(--neon);font-family:'Orbitron';"></span>
+          <span style="color:#94a3b8;"><span id="display-year-desktop"></span> | <span
+              id="display-dept-desktop"></span></span>
         </div>
       </div>
       <!-- Timer -->
-      <div class="timer-card">
-        <p class="label-xs" style="color:var(--neon);margin-bottom:0.25rem;">Time Remaining</p>
-        <div id="timer-desktop" class="font-sci neon-text"
-          style="font-size:2.25rem;font-weight:900;letter-spacing:0.1em;line-height:1;font-variant-numeric:tabular-nums;">
-          --:--</div>
+      <div class="timer-card" style="padding:0.625rem;margin-bottom:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <p class="label-xs" style="color:var(--neon);margin:0;">Time Left</p>
+          <div id="timer-desktop" class="font-sci neon-text"
+            style="font-size:1.5rem;font-weight:900;letter-spacing:0.05em;line-height:1;font-variant-numeric:tabular-nums;">
+            --:--</div>
+        </div>
       </div>
       <!-- Question map -->
-      <div style="flex:1;overflow-y:auto;min-height:0;">
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
         <p class="label-xs" style="margin-bottom:0.25rem;">Question Map</p>
-        <div id="qmap-grid" class="qmap-grid"></div>
-        <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;gap:0.3rem;">
+        <div id="qmap-grid" class="qmap-grid" style="flex:1;overflow-y:auto;align-content:start;"></div>
+        <div style="display:flex;gap:0.5rem;margin-top:0.4rem;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:0.2rem;">
             <div
-              style="width:8px;height:8px;border-radius:2px;background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.5);">
-            </div><span class="label-xs" style="font-size:0.5rem;">Answered</span>
+              style="width:6px;height:6px;border-radius:1px;background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.5);">
+            </div>
+            <span class="label-xs" style="font-size:0.45rem;">Answered</span>
           </div>
-          <div style="display:flex;align-items:center;gap:0.3rem;">
+          <div style="display:flex;align-items:center;gap:0.2rem;">
             <div
-              style="width:8px;height:8px;border-radius:2px;background:rgba(255,200,0,0.08);border:1px solid rgba(255,200,0,0.5);">
-            </div><span class="label-xs" style="font-size:0.5rem;">Flagged</span>
+              style="width:6px;height:6px;border-radius:1px;background:rgba(255,200,0,0.08);border:1px solid rgba(255,200,0,0.5);">
+            </div>
+            <span class="label-xs" style="font-size:0.45rem;">Flagged</span>
           </div>
         </div>
       </div>
-      <!-- Progress -->
+      <!-- Stats Summary -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.3rem;margin-bottom:0;">
+        <div
+          style="text-align:center;border:1px solid rgba(0,240,255,0.15);border-radius:0.4rem;padding:0.3rem;background:rgba(0,240,255,0.03);">
+          <div id="stat-answered" class="font-sci neon-text" style="font-size:0.9rem;font-weight:900;">0</div>
+          <div class="label-xs" style="font-size:0.4rem;color:#1e3a5f;">ANS</div>
+        </div>
+        <div
+          style="text-align:center;border:1px solid rgba(255,200,0,0.2);border-radius:0.4rem;padding:0.3rem;background:rgba(255,200,0,0.03);">
+          <div id="stat-flagged" class="font-sci" style="font-size:0.9rem;font-weight:900;color:#ffd700;">0</div>
+          <div class="label-xs" style="font-size:0.4rem;color:#1e3a5f;">FLAG</div>
+        </div>
+        <div <div
+          style="text-align:center;border:1px solid rgba(255,255,255,0.08);border-radius:0.4rem;padding:0.3rem;background:rgba(255,255,255,0.02);">
+          <div id="stat-unanswered" class="font-sci" style="font-size:0.9rem;font-weight:900;color:#475569;">0</div>
+          <div class="label-xs" style="font-size:0.4rem;color:#1e3a5f;">LEFT</div>
+        </div>
+      </div>
       <div
         style="border:1px solid var(--border);border-radius:0.875rem;padding:0.875rem;background:rgba(0,240,255,0.02);">
         <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
@@ -1345,22 +1744,34 @@
       </div>
 
       <!-- Footer -->
-      <div class="quiz-footer">
-        <button id="btn-prev" class="btn-nav btn-prev" disabled>
-          <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-          </svg>Prev
-        </button>
-        <button id="btn-next" class="btn-nav btn-next">
-          Next<svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-        <button id="btn-submit" class="btn-nav btn-submit hidden" disabled>
-          Transmit<svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
+      <div class="quiz-footer" style="flex-wrap:wrap;gap:0.5rem;">
+        <!-- Row 1: Prev | Mark & Next | Next/Submit -->
+        <div style="display:flex;gap:0.5rem;width:100%;">
+          <button id="btn-prev" class="btn-nav btn-prev" disabled>
+            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+            </svg>Prev
+          </button>
+          <button id="btn-mark-next" class="btn-nav"
+            style="border:1.5px solid rgba(255,200,0,0.4);background:rgba(255,200,0,0.05);color:#ffd700;flex:2;">
+            🚩 Mark &amp; Next
+          </button>
+          <button id="btn-next" class="btn-nav btn-next">
+            Next<svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          <button id="btn-submit" class="btn-nav btn-submit hidden" disabled>
+            Transmit<svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </button>
+        </div>
+        <!-- Row 2: Clear Response -->
+        <button id="btn-clear" class="btn-nav"
+          style="width:100%;border:1px solid #1e293b;background:rgba(15,23,42,0.4);color:#475569;font-size:0.6rem;padding:0.5rem;">
+          ✕ Clear Response
         </button>
       </div>
     </div>
@@ -1387,11 +1798,16 @@
         to Server</p>
       <div
         style="border:1px solid rgba(0,240,255,0.2);border-radius:1.25rem;padding:1.25rem;background:rgba(0,240,255,0.03);margin-bottom:1rem;">
+        <p class="label-xs" style="color:var(--neon);letter-spacing:0.2em;margin-bottom:0.75rem;">MARKS SCORED</p>
         <div class="font-sci neon-text"
           style="font-size:3rem;font-weight:900;line-height:1;display:flex;align-items:baseline;justify-content:center;gap:0.25rem;">
           <span id="score-display">0</span>
-          <span style="font-size:1.25rem;color:#1e3a5f;font-weight:700;">/<span id="total-display">0</span></span>
+          <span style="font-size:1.5rem;color:#1e3a5f;font-weight:700;"> / </span>
+          <span id="total-display" style="font-size:1.5rem;color:#475569;font-weight:700;">20</span>
         </div>
+        <p
+          style="font-size:0.65rem;color:#334155;font-family:'Orbitron',sans-serif;letter-spacing:0.12em;margin-top:0.375rem;">
+          1 MARK PER QUESTION</p>
         <div
           style="width:40px;height:2px;background:rgba(0,240,255,0.3);border-radius:999px;margin:0.75rem auto 0.625rem;">
         </div>
@@ -1462,7 +1878,7 @@
 
     let state = {
       rollNo: '', name: '', year: '', dept: '',
-      questions: [], answers: {}, flagged: new Set(),
+      questions: [], answers: {}, flagged: new Set(), visited: new Set(),
       currentIndex: 0, timeLeft: 0,
       timerInterval: null, isSubmitting: false,
       tabSwitches: 0, violationReason: ''
@@ -1492,22 +1908,64 @@
       }
     })();
 
-    // ── API ─────────────────────────────────────────────
+    // ── API (with timeout + auto-retry for 50+ concurrent users) ──
+    const API_TIMEOUT_MS = 7000;  // 7 s per attempt
+    const API_MAX_RETRIES = 3;
+
+    async function fetchWithTimeout(url, opts = {}, ms = API_TIMEOUT_MS) {
+      const ctrl = new AbortController();
+      const id = setTimeout(() => ctrl.abort(), ms);
+      try {
+        const res = await fetch(url, { ...opts, signal: ctrl.signal });
+        clearTimeout(id);
+        return res;
+      } catch (e) { clearTimeout(id); throw e; }
+    }
+
     async function apiGET(params) {
       const url = new URL(API_URL);
       Object.entries(params).forEach(([k, v]) => url.searchParams.append(k, v));
-      const res = await fetch(url.toString(), { method: 'GET' });
-      if (!res.ok) throw new Error('Network error');
-      return res.json();
+      let lastErr;
+      for (let attempt = 0; attempt < API_MAX_RETRIES; attempt++) {
+        try {
+          const res = await fetchWithTimeout(url.toString(), { method: 'GET' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        } catch (e) { lastErr = e; await new Promise(r => setTimeout(r, 500 * (attempt + 1))); }
+      }
+      throw lastErr;
     }
+
     async function apiPOST(body) {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(body)
-      });
-      if (!res.ok) throw new Error('Network error');
-      return res.json();
+      let lastErr;
+      for (let attempt = 0; attempt < API_MAX_RETRIES; attempt++) {
+        try {
+          const res = await fetchWithTimeout(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(body)
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        } catch (e) { lastErr = e; await new Promise(r => setTimeout(r, 600 * (attempt + 1))); }
+      }
+      throw lastErr;
+    }
+
+    // Background submit queue — keeps retrying silently so user is never blocked
+    async function submitToSheetBackground(payload) {
+      const MAX = 5;
+      for (let i = 0; i < MAX; i++) {
+        try {
+          await apiPOST(payload);
+          return; // success
+        } catch (e) {
+          if (i < MAX - 1) await new Promise(r => setTimeout(r, 3000 * (i + 1)));
+        }
+      }
+      // If all retries fail, persist locally so admin can recover
+      localStorage.setItem('aq_failedSubmit_' + payload.roll_no,
+        JSON.stringify({ ...payload, ts: Date.now() }));
     }
 
     // ── PREFETCH QUESTIONS ──────────────────────────────
@@ -1519,7 +1977,55 @@
       generateDevtoolsBait();
     });
 
-    // ── LOGIN ────────────────────────────────────────────
+    // ── CUSTOM CURSOR ───────────────────────────────────
+    const sciCursor = $('sci-cursor');
+
+    document.addEventListener('mousemove', (e) => {
+      // Arrow tip is at top-left of element, no centering offset needed
+      sciCursor.style.left = e.clientX + 'px';
+      sciCursor.style.top = e.clientY + 'px';
+    });
+
+    document.addEventListener('mousedown', () => {
+      sciCursor.style.transform = 'scale(0.88)';
+    });
+
+    document.addEventListener('mouseup', () => {
+      sciCursor.style.transform = 'scale(1)';
+    });
+
+    // Hover state for buttons/inputs
+    const interactiveElements = document.querySelectorAll('button, input, select, label, a');
+    interactiveElements.forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+    });
+
+    // Handle dynamically created hover elements
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.addedNodes.length) {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === 1) {
+              const interactives = node.querySelectorAll('button, input, label, a');
+              interactives.forEach(el => {
+                el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+                el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+              });
+              if (node.matches && node.matches('button, input, label, a')) {
+                node.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+                node.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+              }
+            }
+          });
+        }
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // (hover wiring handled by the cursor observer above)
+
+    // ── LOGIN ─────────────────────────────────────────────
     $('login-form').addEventListener('submit', async e => {
       e.preventDefault();
       const roll = $('roll-input').value.trim().toUpperCase();
@@ -1530,36 +2036,122 @@
       try {
         let res;
         if (LOCAL_TEST) {
-          // ── LOCAL TEST MODE: bypass API, accept any roll number ──
-          await new Promise(r => setTimeout(r, 800)); // fake delay
+          // LOCAL TEST MODE: bypass API, accept any roll number
+          await new Promise(r => setTimeout(r, 400)); // minimal fake delay
           res = {
             success: true, rollNo: roll, name: 'Test Student',
-            year: '1st Year', dept: 'Aerospace Engg', duration: 10
+            year: '1st Year', dept: 'Aerospace Engg', duration: 25
           };
         } else {
-          res = await apiGET({ action: 'loginMCQ', roll_no: roll });
+          // Fire login + question fetch in PARALLEL — fastest possible load
+          const [loginRes, qFetch] = await Promise.all([
+            apiGET({ action: 'loginMCQ', roll_no: roll }),
+            prefetchedQs ? Promise.resolve(null) : fetch(QUESTIONS_URL).then(r => r.json()).catch(() => null)
+          ]);
+          res = loginRes;
+          if (qFetch) prefetchedQs = qFetch; // cache for later use
         }
+
         if (res.success) {
           state.rollNo = res.rollNo || roll;
           state.name = res.name || roll;
           state.year = res.year || '';
           state.dept = res.dept || '';
-          recoverState(res.duration || 10);
-          setStudentDisplay();
-          showToast('Authentication OK — Welcome, ' + state.name, 'success');
-          const qs = prefetchedQs || await (await fetch(QUESTIONS_URL)).json();
+          recoverState(25); // always 25-min exam
+
+          const qs = prefetchedQs;
           if (!qs || !qs.length) throw new Error('No questions found in question bank.');
-          processQuiz(qs);
+
+          hideLoader();
+          runTerminalSequence(qs);
         } else {
           if (res.alreadyAttempted) showToast('Already submitted this exam!', 'error');
           else showToast(res.message || 'Access Denied', 'error');
           hideLoader();
         }
       } catch (err) {
-        showToast(err.message || 'Connection error', 'error');
+        showToast('Connection error — check network or try again.', 'error');
         hideLoader();
       }
     });
+
+    async function runTerminalSequence(qs) {
+      $('login-section').classList.add('hidden');
+      const termOverlay = $('terminal-overlay');
+      termOverlay.classList.remove('hidden');
+      await new Promise(r => setTimeout(r, 50));
+      termOverlay.classList.add('active');
+
+      const content = $('terminal-content');
+      content.innerHTML = '';
+
+      // Helper: type a single line into a div
+      async function typeLine(text, cls = 'terminal-line', delay = 20) {
+        const div = document.createElement('div');
+        div.className = cls;
+        content.appendChild(div);
+        for (let i = 0; i < text.length; i++) {
+          div.textContent += text[i];
+          await new Promise(r => setTimeout(r, delay + Math.random() * 25));
+        }
+        await new Promise(r => setTimeout(r, 180 + Math.random() * 220));
+        return div;
+      }
+
+      // Phase 1: system boot lines
+      const bootLines = [
+        '> INITIATING SECURE HANDSHAKE...',
+        '> QUANTUM UPLINK ESTABLISHED.',
+        '> SCANNING BIOMETRICS...',
+        '> VERIFYING CREDENTIALS...',
+      ];
+      for (const line of bootLines) await typeLine(line);
+
+      // ACCESS GRANTED — big highlight
+      await new Promise(r => setTimeout(r, 120));
+      const accessDiv = document.createElement('div');
+      accessDiv.className = 'terminal-line terminal-access';
+      accessDiv.textContent = '';
+      content.appendChild(accessDiv);
+      const accessText = '>> ACCESS GRANTED <<';
+      for (let i = 0; i < accessText.length; i++) {
+        accessDiv.textContent += accessText[i];
+        await new Promise(r => setTimeout(r, 30));
+      }
+      await new Promise(r => setTimeout(r, 400));
+
+      // WELCOME — large glowing name
+      const welcomeDiv = document.createElement('div');
+      welcomeDiv.className = 'terminal-welcome';
+      welcomeDiv.innerHTML = `WELCOME, <span class="terminal-name">${state.name.toUpperCase()}</span>`;
+      content.appendChild(welcomeDiv);
+      await new Promise(r => setTimeout(r, 600));
+
+      // ID badges row
+      const badgeRow = document.createElement('div');
+      badgeRow.className = 'terminal-badges';
+      badgeRow.innerHTML = `
+        <div class="t-badge"><span class="t-label">ID</span><span class="t-value">${state.rollNo.toUpperCase()}</span></div>
+        <div class="t-badge"><span class="t-label">DEPT</span><span class="t-value">${state.dept.toUpperCase()}</span></div>
+        <div class="t-badge"><span class="t-label">YEAR</span><span class="t-value">${state.year}</span></div>
+      `;
+      content.appendChild(badgeRow);
+      await new Promise(r => setTimeout(r, 500));
+
+      // Phase 3: mission lines
+      await typeLine('> LOADING MISSION PARAMETERS...');
+      await typeLine('> SYSTEMS NOMINAL. INITIATING EXAM SEQUENCE.');
+      await typeLine('> STAND BY...');
+
+      await new Promise(r => setTimeout(r, 600));
+      termOverlay.classList.remove('active');
+
+      setTimeout(() => {
+        termOverlay.classList.add('hidden');
+        setStudentDisplay();
+        processQuiz(qs);
+      }, 500);
+    }
 
     function setStudentDisplay() {
       $('display-name-desktop').textContent = state.name;
@@ -1608,6 +2200,7 @@
       document.querySelectorAll('.qmap-btn').forEach((btn, i) => {
         const q = state.questions[i];
         btn.className = 'qmap-btn';
+        if (state.visited.has(q.id) && state.answers[q.id] === undefined) btn.classList.add('visited');
         if (state.answers[q.id] !== undefined) btn.classList.add('answered');
         if (state.flagged.has(q.id)) btn.classList.add('flagged');
         if (i === state.currentIndex) btn.classList.add('current');
@@ -1618,10 +2211,13 @@
     function renderQuestion() {
       const q = state.questions[state.currentIndex];
       const total = state.questions.length;
+      // Mark as visited
+      state.visited.add(q.id);
 
       $('question-counter').textContent = `Question ${state.currentIndex + 1} / ${total}`;
-      $('q-number-badge').textContent = `Q${state.currentIndex + 1}`;
+      $('q-number-badge').textContent = `Q${state.currentIndex + 1} / ${total}`;
       updateProgress();
+      updateStats();
 
       // Flag button
       const fbtn = $('btn-flag');
@@ -1636,8 +2232,8 @@
         img.src = ''; img.classList.add('hidden');
       }
 
-      // Question text
-      $('question-text').textContent = q.question;
+      // Question text — use innerHTML so MathJax can process $...$ delimiters
+      $('question-text').innerHTML = q.question;
 
       // Equation
       const eqDiv = $('equation-display');
@@ -1656,7 +2252,7 @@
       q.shuffledOptions.forEach((opt, idx) => {
         const checked = state.answers[q.id] === opt.id ? 'checked' : '';
         const optText = String(opt.text);
-        const isEq = optText.includes('\\');
+        // Render option text as-is; MathJax will handle $...$ and \(...\) delimiters
         $('options-container').insertAdjacentHTML('beforeend', `
       <label class="option-label">
         <input type="radio" name="opt_${q.id}" value="${opt.id}" class="option-input"
@@ -1664,14 +2260,15 @@
         <div class="option-box">
           <div class="radio-outer"><div class="radio-inner"></div></div>
           <span class="option-letter">${letters[idx]}</span>
-          <span class="option-text${isEq ? ' eq-text' : ''}">${isEq ? '\\(' + optText + '\\)' : optText}</span>
+          <span class="option-text">${optText}</span>
         </div>
       </label>
     `);
       });
 
+      // Typeset the whole question card so inline math in both question text and options is rendered
       if (window.MathJax && MathJax.typesetPromise) {
-        MathJax.typesetPromise([$('options-container')]);
+        MathJax.typesetPromise([$('question-text'), $('options-container')]);
       }
 
       $('question-area').scrollTop = 0;
@@ -1690,8 +2287,20 @@
       saveState();
       checkSubmit();
       updateProgress();
+      updateStats();
       updateQMap();
     };
+
+    // ── STATS UPDATE ─────────────────────────────────────
+    function updateStats() {
+      const total = state.questions.length;
+      const answered = Object.keys(state.answers).length;
+      const flagged = state.flagged.size;
+      const left = total - answered;
+      if ($('stat-answered')) $('stat-answered').textContent = answered;
+      if ($('stat-flagged')) $('stat-flagged').textContent = flagged;
+      if ($('stat-unanswered')) $('stat-unanswered').textContent = left;
+    }
 
     $('btn-flag').addEventListener('click', () => {
       const q = state.questions[state.currentIndex];
@@ -1699,6 +2308,57 @@
       else state.flagged.add(q.id);
       $('btn-flag').classList.toggle('active', state.flagged.has(q.id));
       updateQMap();
+      updateStats();
+    });
+
+    // Mark & Next
+    $('btn-mark-next').addEventListener('click', () => {
+      const q = state.questions[state.currentIndex];
+      state.flagged.add(q.id);
+      $('btn-flag').classList.add('active');
+      updateQMap();
+      updateStats();
+      if (state.currentIndex < state.questions.length - 1) { state.currentIndex++; renderQuestion(); }
+    });
+
+    // Clear Response
+    $('btn-clear').addEventListener('click', () => {
+      const q = state.questions[state.currentIndex];
+      delete state.answers[q.id];
+      // Uncheck the radio for this question
+      document.querySelectorAll(`input[name="opt_${q.id}"]`).forEach(r => r.checked = false);
+      saveState();
+      checkSubmit();
+      updateProgress();
+      updateStats();
+      updateQMap();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+      if (state.isSubmitting || sections.quiz.classList.contains('hidden')) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      const key = e.key;
+      if (key === 'ArrowRight' || key === 'ArrowDown') {
+        e.preventDefault();
+        if (state.currentIndex < state.questions.length - 1) { state.currentIndex++; renderQuestion(); }
+      } else if (key === 'ArrowLeft' || key === 'ArrowUp') {
+        e.preventDefault();
+        if (state.currentIndex > 0) { state.currentIndex--; renderQuestion(); }
+      } else if (['1', '2', '3', '4'].includes(key)) {
+        const idx = parseInt(key) - 1;
+        const q = state.questions[state.currentIndex];
+        if (q.shuffledOptions[idx]) {
+          selectAnswer(q.id, q.shuffledOptions[idx].id);
+          // Sync radio UI
+          const radios = document.querySelectorAll(`input[name="opt_${q.id}"]`);
+          if (radios[idx]) radios[idx].checked = true;
+        }
+      } else if (key === 'm' || key === 'M') {
+        $('btn-flag').click();
+      } else if (key === 'Delete' || key === 'Backspace') {
+        if (key === 'Delete') { e.preventDefault(); $('btn-clear').click(); }
+      }
     });
 
     function updateProgress() {
@@ -1713,8 +2373,8 @@
 
     function checkSubmit() {
       const done = Object.keys(state.answers).length === state.questions.length;
-      $('btn-submit').disabled = !done;
-      $('btn-submit').classList.toggle('pulse', done);
+      $('btn-submit').disabled = false; // Always allow early submit
+      $('btn-submit').classList.toggle('pulse', done); // Pulse if fully complete
     }
 
     $('btn-next').addEventListener('click', () => {
@@ -1731,39 +2391,31 @@
       state.isSubmitting = true;
       clearInterval(state.timerInterval);
 
-      // Compute score client-side
+      // Compute score client-side immediately
       let score = 0;
       const total = state.questions.length;
       state.questions.forEach(q => {
         const given = state.answers[q.id];
         const correct = String(q.answer || '').trim().toUpperCase();
-        // Map given shuffled option ID back to original letter via shuffledOptions
-        const givenOrig = given; // options already carry original id A/B/C/D
-        if (givenOrig && givenOrig === correct) score++;
+        if (given && given === correct) score++;
       });
 
       if (isAuto) showToast('Time Expired — Auto-submitting...', 'warning');
-      showLoader('TRANSMITTING DATA...');
 
-      try {
-        if (!LOCAL_TEST) {
-          await apiPOST({ action: 'submitMCQ', roll_no: state.rollNo, score, total });
-        } else {
-          await new Promise(r => setTimeout(r, 700)); // fake network delay
-        }
-        localStorage.removeItem('aqState_' + state.rollNo);
-        hideLoader();
-        exitFullscreen();
-        if (isCheat) {
-          $('lock-reason-text').textContent = reason || state.violationReason || 'Multiple security violations.';
-          switchSection('locked');
-        } else {
-          showResult(score, total);
-        }
-      } catch (err) {
-        hideLoader();
-        showToast('Warning: Could not save to server. Contact admin.', 'error');
-        if (!isCheat) showResult(score, total);
+      // ── FIRE-AND-FORGET: show result instantly, post to sheet in background ──
+      localStorage.removeItem('aqState_' + state.rollNo);
+      exitFullscreen();
+
+      if (isCheat) {
+        $('lock-reason-text').textContent = reason || state.violationReason || 'Multiple security violations.';
+        switchSection('locked');
+      } else {
+        showResult(score, total);
+      }
+
+      // Background submit — never blocks the student UI
+      if (!LOCAL_TEST) {
+        submitToSheetBackground({ action: 'submitMCQ', roll_no: state.rollNo, score, total });
       }
     }
 
@@ -1856,18 +2508,48 @@
       state.timeLeft = defMin * 60;
     }
 
+    // Default quiz duration — set to 25 minutes
+    const DEFAULT_DURATION_MINUTES = 25;
+
     // ── ANTI-CHEAT ───────────────────────────────────────
+    // ── GLOBAL SECURITY (active from page load) ─────────
+    // Right-click disabled everywhere, always
+    document.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Block print from page load
+    window.addEventListener('beforeprint', e => e.preventDefault());
+    const _origPrint = window.print;
+    window.print = () => { console.warn('[AeroQuest] Print blocked.'); };
+
     function attachAntiCheat() {
-      document.addEventListener('contextmenu', e => e.preventDefault());
-      ['copy', 'cut', 'paste', 'dragstart', 'drop'].forEach(ev =>
+      // copy/cut/paste/drag blocked in quiz
+      ['copy', 'cut', 'paste', 'dragstart', 'drop', 'selectstart'].forEach(ev =>
         document.addEventListener(ev, e => e.preventDefault()));
+
       document.addEventListener('keydown', e => {
-        // Block F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, Ctrl+A
-        if (e.key === 'F12' ||
-          (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
-          (e.ctrlKey && ['U', 'S', 'A', 'P'].includes(e.key.toUpperCase()))) {
-          e.preventDefault(); e.stopPropagation();
+        const key = e.key.toUpperCase();
+        // Block DevTools, view-source, save, print, refresh, screenshots
+        if (
+          e.key === 'F12' ||
+          e.key === 'F5' ||
+          e.key === 'F11' ||
+          (e.ctrlKey && e.shiftKey && ['I', 'J', 'C', 'K'].includes(key)) ||
+          (e.ctrlKey && ['U', 'S', 'A', 'P'].includes(key)) ||
+          (e.metaKey && ['U', 'S', 'A', 'P'].includes(key)) ||
+          (e.ctrlKey && e.key === 'F5') ||
+          e.key === 'PrintScreen'
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
           securityViolation('Developer tools or keyboard shortcut detected.');
+        }
+      }, true); // capture phase
+
+      // Detect fullscreen exit during quiz
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && !state.isSubmitting &&
+          !sections.quiz.classList.contains('hidden')) {
+          securityViolation('Fullscreen exited during exam.');
         }
       });
     }
