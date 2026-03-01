@@ -1,15 +1,6 @@
 {
-    "version": 2,
-    "builds": [
-        {
-            "src": "*.html",
-            "use": "@vercel/static"
-        },
-        {
-            "src": "*.json",
-            "use": "@vercel/static"
-        }
-    ],
+    "cleanUrls": true,
+    "trailingSlash": false,
     "headers": [
         {
             "source": "/(.*)",
@@ -34,6 +25,15 @@
                 {
                     "key": "Cache-Control",
                     "value": "public, max-age=3600"
+                }
+            ]
+        },
+        {
+            "source": "/logo.png",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=86400, immutable"
                 }
             ]
         }
