@@ -2085,7 +2085,7 @@
           await new Promise(r => setTimeout(r, 400)); // minimal fake delay
           res = {
             success: true, rollNo: roll, name: 'Test Student',
-            year: '1st Year', dept: 'Aerospace Engg', duration: 25
+            year: '1st Year', dept: 'Aerospace Engg', duration: 20
           };
         } else {
           // Fire login + question fetch in PARALLEL — fastest possible load
@@ -2102,7 +2102,7 @@
           state.name = res.name || roll;
           state.year = res.year || '';
           state.dept = res.dept || '';
-          recoverState(25); // always 25-min exam
+          recoverState(20); // always 20-min exam
 
           const qs = prefetchedQs;
           if (!qs || !qs.length) throw new Error('No questions found in question bank.');
@@ -2572,7 +2572,7 @@
     }
 
     // Default quiz duration — set to 25 minutes
-    const DEFAULT_DURATION_MINUTES = 25;
+    const DEFAULT_DURATION_MINUTES = 20;
 
     // ── ANTI-CHEAT ───────────────────────────────────────
     // ── GLOBAL SECURITY (active from page load) ─────────
