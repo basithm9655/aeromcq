@@ -4,771 +4,604 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Lab Report Generator</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+<!-- jsPDF ONLY — no html2canvas needed, so no blank-PDF bug -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  /* ── RESET & BASE ─────────────────────────── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --ink:    #0f1923;
-    --ink2:   #3d4f5c;
-    --ink3:   #7a8e9a;
-    --paper:  #f6f3ee;
-    --paper2: #ede9e2;
-    --gold:   #c8973a;
-    --gold2:  #f0c060;
-    --accent: #1a3a5c;
-    --red:    #c0392b;
-    --radius: 12px;
-    --shadow: 0 4px 24px rgba(15,25,35,.10);
-  }
-  html { scroll-behavior: smooth; }
-  body {
-    background: var(--paper);
-    color: var(--ink);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
-    padding: 24px 12px 60px;
-  }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f1923;--ink2:#3d4f5c;--ink3:#7a8e9a;
+  --paper:#f5f2ec;--paper2:#e8e3d8;
+  --gold:#c8973a;--gold2:#f0c060;
+  --accent:#1a3a5c;--red:#c0392b;
+  --green:#1a7a4a;
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'DM Sans',sans-serif;
+  min-height:100vh;
+  padding:20px 10px 60px;
+}
 
-  /* ── LAYOUT ──────────────────────────────── */
-  .shell {
-    max-width: 860px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: var(--shadow), 0 1px 0 rgba(200,151,58,.3);
-    border: 1px solid var(--paper2);
-  }
+/* ── SHELL ── */
+.shell{
+  max-width:880px;margin:0 auto;
+  border-radius:18px;overflow:hidden;
+  box-shadow:0 6px 40px rgba(15,25,35,.13),0 1px 0 rgba(200,151,58,.25);
+  border:1px solid var(--paper2);
+}
 
-  /* ── HEADER ──────────────────────────────── */
-  .header {
-    background: var(--accent);
-    padding: 28px 36px 22px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  }
-  .header-left { display: flex; align-items: center; gap: 14px; }
-  .header-icon {
-    width: 44px; height: 44px;
-    background: var(--gold);
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    flex-shrink: 0;
-  }
-  .header-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    color: #fff;
-    letter-spacing: .01em;
-  }
-  .header-sub {
-    font-size: 12px;
-    color: #8fa9c0;
-    margin-top: 2px;
-    font-weight: 300;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-  }
-  .header-badge {
-    background: rgba(200,151,58,.18);
-    border: 1px solid rgba(200,151,58,.35);
-    color: var(--gold2);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    padding: 5px 12px;
-    border-radius: 20px;
-    white-space: nowrap;
-  }
+/* ── HEADER ── */
+.hdr{
+  background:var(--accent);
+  padding:26px 36px 20px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  flex-wrap:wrap;
+}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.hdr-icon{
+  width:44px;height:44px;background:var(--gold);
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+}
+.hdr-title{
+  font-family:'DM Serif Display',serif;font-size:21px;color:#fff;
+}
+.hdr-sub{font-size:11px;color:#8fa9c0;margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+.hdr-badge{
+  background:rgba(200,151,58,.15);border:1px solid rgba(200,151,58,.3);
+  color:var(--gold2);font-size:11px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;padding:5px 13px;border-radius:20px;white-space:nowrap;
+}
 
-  /* ── BODY ────────────────────────────────── */
-  .body {
-    background: #fff;
-    padding: 32px 36px 36px;
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-  }
+/* ── BODY ── */
+.body{background:#fff;padding:32px 36px 40px;display:flex;flex-direction:column;gap:28px}
 
-  /* ── SECTION LABEL ───────────────────────── */
-  .section-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: var(--ink3);
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--paper2);
-  }
+/* ── SECTION LABEL ── */
+.slabel{
+  font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink3);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.slabel::after{content:'';flex:1;height:1px;background:var(--paper2)}
 
-  /* ── FORM GRID ───────────────────────────── */
-  .form-grid {
-    display: grid;
-    grid-template-columns: 2fr 1.5fr 1.5fr;
-    gap: 16px;
-  }
-  @media(max-width:600px){ .form-grid { grid-template-columns: 1fr; } }
-  .field { display: flex; flex-direction: column; gap: 6px; }
-  .field label {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: var(--ink2);
-  }
-  .field input {
-    background: var(--paper);
-    border: 1.5px solid var(--paper2);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 14px;
-    font-family: 'DM Sans', sans-serif;
-    color: var(--ink);
-    outline: none;
-    transition: border-color .2s, box-shadow .2s;
-  }
-  .field input:focus {
-    border-color: var(--gold);
-    box-shadow: 0 0 0 3px rgba(200,151,58,.12);
-    background: #fff;
-  }
+/* ── FORM GRID ── */
+.fgrid{display:grid;grid-template-columns:2fr 1.4fr 1.4fr;gap:14px}
+@media(max-width:580px){.fgrid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.field input{
+  background:var(--paper);border:1.5px solid var(--paper2);border-radius:8px;
+  padding:10px 13px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);
+  outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.field input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,151,58,.12);background:#fff}
 
-  /* ── FIGURES HEADER ──────────────────────── */
-  .figures-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .figures-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 17px;
-    color: var(--ink);
-  }
-  .btn-add {
-    display: flex; align-items: center; gap: 7px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 9px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    transition: background .2s, transform .1s;
-    user-select: none;
-  }
-  .btn-add:hover { background: #0e2740; }
-  .btn-add:active { transform: scale(.97); }
+/* ── FIGURES HEADER ── */
+.figs-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.figs-title{font-family:'DM Serif Display',serif;font-size:17px}
+.btn-add{
+  display:flex;align-items:center;gap:7px;
+  background:var(--accent);color:#fff;border:none;border-radius:8px;
+  padding:9px 18px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;
+  cursor:pointer;transition:background .2s,transform .1s;user-select:none;
+}
+.btn-add:hover{background:#0e2740}.btn-add:active{transform:scale(.97)}
 
-  /* ── FIGURE CARD ─────────────────────────── */
-  .fig-cards { display: flex; flex-direction: column; gap: 14px; }
-  .fig-card {
-    background: var(--paper);
-    border: 1.5px solid var(--paper2);
-    border-radius: var(--radius);
-    padding: 18px 20px;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 16px;
-    align-items: start;
-    transition: border-color .2s, box-shadow .2s;
-    animation: slideIn .22s ease;
-  }
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(-8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .fig-card:hover { border-color: #c8c0b0; box-shadow: 0 2px 12px rgba(0,0,0,.05); }
-  @media(max-width:600px) { .fig-card { grid-template-columns: 1fr; } }
+/* ── CARDS ── */
+.cards{display:flex;flex-direction:column;gap:12px}
+.card{
+  background:var(--paper);border:1.5px solid var(--paper2);border-radius:12px;
+  padding:16px 18px;
+  display:grid;grid-template-columns:34px 1fr 34px;gap:14px;align-items:start;
+  animation:slideIn .22s ease;transition:border-color .2s,box-shadow .2s;
+}
+.card:hover{border-color:#c8c0b0;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:580px){.card{grid-template-columns:1fr}}
 
-  /* Number badge */
-  .fig-num {
-    width: 30px; height: 30px;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
+.num{
+  width:30px;height:30px;background:var(--accent);color:#fff;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0;margin-top:2px;
+}
+.card-body{display:flex;flex-direction:column;gap:11px}
 
-  .fig-body { display: flex; flex-direction: column; gap: 12px; }
+/* ── DROP ZONE ── */
+.dz{
+  border:2px dashed #c8c0b0;border-radius:8px;padding:20px 14px;
+  text-align:center;cursor:pointer;transition:border-color .2s,background .2s;
+  position:relative;background:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  min-height:90px;
+}
+.dz:hover,.dz.over{border-color:var(--gold);background:#fffbf3}
+.dz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-icon{font-size:24px}
+.dz-txt{font-size:12px;color:var(--ink3);font-weight:500}
+.dz-hint{font-size:10px;color:#bbb}
 
-  /* Drop zone */
-  .drop-zone {
-    border: 2px dashed #c8c0b0;
-    border-radius: 8px;
-    padding: 18px 14px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color .2s, background .2s;
-    position: relative;
-    background: #fff;
-    min-height: 100px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--gold);
-    background: #fffbf3;
-  }
-  .drop-zone input[type=file] {
-    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-  }
-  .drop-icon { font-size: 26px; }
-  .drop-text { font-size: 12px; color: var(--ink3); font-weight: 500; }
-  .drop-hint { font-size: 10px; color: #aaa; }
+/* ── THUMB ── */
+.thumb-wrap{display:none;position:relative;border-radius:8px;overflow:hidden;border:1.5px solid var(--paper2)}
+.thumb-wrap img{display:block;width:100%;max-height:170px;object-fit:contain;background:#fff}
+.thumb-clr{
+  position:absolute;top:6px;right:6px;width:24px;height:24px;
+  background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  cursor:pointer;transition:background .15s;
+}
+.thumb-clr:hover{background:var(--red)}
 
-  /* Preview */
-  .thumb-wrap {
-    display: none;
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1.5px solid var(--paper2);
-    background: var(--paper);
-  }
-  .thumb-wrap img {
-    display: block;
-    width: 100%;
-    max-height: 180px;
-    object-fit: contain;
-    background: #fff;
-  }
-  .thumb-clear {
-    position: absolute;
-    top: 6px; right: 6px;
-    width: 24px; height: 24px;
-    background: rgba(0,0,0,.55);
-    color: #fff;
-    border: none;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background .15s;
-  }
-  .thumb-clear:hover { background: var(--red); }
+/* ── CAPTION ── */
+.cap-wrap{display:flex;flex-direction:column;gap:4px}
+.cap-wrap label{font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:.04em;text-transform:uppercase}
+.cap-wrap input{
+  background:#fff;border:1.5px solid var(--paper2);border-radius:8px;
+  padding:9px 13px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);
+  outline:none;transition:border-color .2s;
+}
+.cap-wrap input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,151,58,.1)}
 
-  /* Caption input */
-  .caption-wrap { display: flex; flex-direction: column; gap: 5px; }
-  .caption-wrap label { font-size: 11px; font-weight: 600; color: var(--ink3); letter-spacing: .04em; text-transform: uppercase; }
-  .caption-wrap input {
-    background: #fff;
-    border: 1.5px solid var(--paper2);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 14px;
-    font-family: 'DM Sans', sans-serif;
-    color: var(--ink);
-    outline: none;
-    transition: border-color .2s;
-  }
-  .caption-wrap input:focus {
-    border-color: var(--gold);
-    box-shadow: 0 0 0 3px rgba(200,151,58,.1);
-  }
+/* ── REMOVE BTN ── */
+.btn-rm{
+  background:none;border:none;color:#ccc;cursor:pointer;
+  font-size:16px;padding:4px;border-radius:6px;line-height:1;
+  transition:color .15s,background .15s;margin-top:3px;
+}
+.btn-rm:hover{color:var(--red);background:#fdecea}
 
-  /* Remove btn */
-  .btn-remove {
-    background: none;
-    border: none;
-    color: #bbb;
-    cursor: pointer;
-    font-size: 18px;
-    padding: 4px;
-    border-radius: 6px;
-    line-height: 1;
-    transition: color .15s, background .15s;
-    margin-top: 2px;
-  }
-  .btn-remove:hover { color: var(--red); background: #fdecea; }
+/* ── EMPTY STATE ── */
+.empty{
+  text-align:center;padding:36px 20px;color:var(--ink3);
+  border:2px dashed var(--paper2);border-radius:12px;
+}
+.empty .ei{font-size:34px;margin-bottom:10px}
+.empty p{font-size:14px}
 
-  /* ── EMPTY STATE ─────────────────────────── */
-  .empty-state {
-    text-align: center;
-    padding: 36px 20px;
-    color: var(--ink3);
-    border: 2px dashed var(--paper2);
-    border-radius: var(--radius);
-  }
-  .empty-state .em-icon { font-size: 36px; margin-bottom: 10px; }
-  .empty-state p { font-size: 14px; }
+/* ── PREVIEW SECTION ── */
+.preview-section{
+  background:var(--paper);border:1.5px solid var(--paper2);border-radius:12px;
+  padding:18px 20px;
+}
+.preview-title{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+.pdf-preview{
+  background:#fff;border:1px solid #ddd;border-radius:6px;
+  padding:24px 28px;font-family:'Times New Roman',serif;color:#000;
+  font-size:13px;
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+  max-height:380px;overflow-y:auto;
+}
+.pp-title{text-align:center;font-size:18px;font-weight:bold;text-transform:uppercase;text-decoration:underline;margin-bottom:20px}
+.pp-fig{margin-bottom:16px;text-align:center}
+.pp-fig img{max-width:100%;max-height:140px;object-fit:contain;display:block;margin:0 auto 6px}
+.pp-cap{font-weight:bold;font-size:13px;text-align:center}
+.pp-footer{text-align:right;font-weight:bold;font-size:13px;margin-top:18px;border-top:1px solid #eee;padding-top:10px}
 
-  /* ── GENERATE BUTTON ─────────────────────── */
-  .generate-wrap {
-    padding-top: 8px;
-  }
-  .btn-generate {
-    width: 100%;
-    background: var(--gold);
-    color: var(--ink);
-    border: none;
-    border-radius: 10px;
-    padding: 16px 24px;
-    font-size: 15px;
-    font-weight: 700;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    letter-spacing: .02em;
-    transition: background .2s, transform .1s, box-shadow .2s;
-    box-shadow: 0 4px 18px rgba(200,151,58,.30);
-  }
-  .btn-generate:hover { background: var(--gold2); box-shadow: 0 6px 24px rgba(200,151,58,.38); }
-  .btn-generate:active { transform: scale(.98); }
-  .btn-generate:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-  .btn-icon { font-size: 20px; }
+/* ── GENERATE BTN ── */
+.gen-wrap{padding-top:4px}
+.btn-gen{
+  width:100%;background:var(--gold);color:var(--ink);border:none;border-radius:10px;
+  padding:15px 24px;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;
+  letter-spacing:.02em;transition:background .2s,transform .1s,box-shadow .2s;
+  box-shadow:0 4px 20px rgba(200,151,58,.28);
+}
+.btn-gen:hover{background:var(--gold2);box-shadow:0 6px 26px rgba(200,151,58,.38)}
+.btn-gen:active{transform:scale(.98)}
+.btn-gen:disabled{opacity:.5;cursor:not-allowed;transform:none}
 
-  /* ── TOAST ───────────────────────────────── */
-  #toast {
-    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
-    background: var(--ink);
-    color: #fff;
-    padding: 12px 24px;
-    border-radius: 40px;
-    font-size: 13px;
-    font-weight: 600;
-    z-index: 9999;
-    transition: transform .3s cubic-bezier(.22,1,.36,1), opacity .3s;
-    opacity: 0;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--ink);color:#fff;padding:11px 22px;
+  border-radius:40px;font-size:13px;font-weight:600;
+  z-index:9999;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s;
+  opacity:0;pointer-events:none;white-space:nowrap;
+}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.ok{background:var(--green)}
+#toast.err{background:var(--red)}
 
-  /* ── PROGRESS BAR ────────────────────────── */
-  #progress-bar {
-    height: 3px;
-    background: var(--gold);
-    width: 0%;
-    transition: width .4s ease;
-    position: fixed;
-    top: 0; left: 0;
-    z-index: 9998;
-    border-radius: 0 2px 2px 0;
-  }
+/* ── PROGRESS ── */
+#pbar{height:3px;background:var(--gold);width:0%;position:fixed;top:0;left:0;z-index:9998;border-radius:0 2px 2px 0;transition:width .35s ease}
 
-  /* ── PDF RENDER CONTAINER (offscreen) ─────── */
-  #pdf-stage {
-    position: fixed;
-    left: -9999px;
-    top: 0;
-    width: 794px; /* A4 @ 96dpi */
-    background: #fff;
-    color: #000;
-    font-family: 'Times New Roman', serif;
-    padding: 0;
-    z-index: -1;
-  }
-  .pdf-page {
-    width: 794px;
-    min-height: 1123px;
-    padding: 50px 55px;
-    box-sizing: border-box;
-    page-break-after: always;
-    background: #fff;
-    position: relative;
-  }
-  .pdf-page:last-child { page-break-after: auto; }
-  .pdf-h1 {
-    font-family: 'Times New Roman', serif;
-    font-size: 20pt;
-    font-weight: bold;
-    text-align: center;
-    text-transform: uppercase;
-    text-decoration: underline;
-    margin-bottom: 36px;
-    color: #000;
-  }
-  .pdf-fig {
-    page-break-inside: avoid;
-    margin-bottom: 36px;
-    text-align: center;
-  }
-  .pdf-fig img {
-    display: block;
-    max-width: 100%;
-    max-height: 380px;
-    margin: 0 auto 10px;
-    object-fit: contain;
-  }
-  .pdf-caption {
-    font-family: 'Times New Roman', serif;
-    font-size: 13pt;
-    font-weight: bold;
-    text-align: center;
-    color: #000;
-  }
-  .pdf-footer {
-    font-family: 'Times New Roman', serif;
-    font-size: 13pt;
-    font-weight: bold;
-    text-align: right;
-    color: #000;
-    margin-top: 40px;
-    page-break-inside: avoid;
-    line-height: 1.6;
-  }
+/* ── SPINNER ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin 1s linear infinite}
 </style>
 </head>
 <body>
-
-<div id="progress-bar"></div>
+<div id="pbar"></div>
 <div id="toast"></div>
 
-<!-- ── OFF-SCREEN PDF STAGE ───────────────────── -->
-<div id="pdf-stage"></div>
-
 <div class="shell">
-  <!-- Header -->
-  <div class="header">
-    <div class="header-left">
-      <div class="header-icon">📋</div>
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="hdr-icon">📋</div>
       <div>
-        <div class="header-title">Lab Report Generator</div>
-        <div class="header-sub">Automated PDF export &nbsp;·&nbsp; High quality</div>
+        <div class="hdr-title">Lab Report Generator</div>
+        <div class="hdr-sub">Upload images · Enter captions · Get PDF</div>
       </div>
     </div>
-    <div class="header-badge">A4 · PDF</div>
+    <div class="hdr-badge">jsPDF · A4</div>
   </div>
 
-  <!-- Body -->
+  <!-- BODY -->
   <div class="body">
 
-    <!-- Info Section -->
+    <!-- INFO FIELDS -->
     <div>
-      <div class="section-label">Report Details</div>
-      <div class="form-grid">
+      <div class="slabel">Report Details</div>
+      <div class="fgrid">
         <div class="field">
-          <label>Main Title</label>
-          <input type="text" id="mainTitle" placeholder="e.g. EXPERIMENT 1 – Voltage Regulator" value="EXPERIMENT 1"/>
+          <label>Experiment Title</label>
+          <input id="mainTitle" type="text" placeholder="e.g. EXPERIMENT 6" value="EXPERIMENT 6" oninput="refreshPreview()"/>
         </div>
         <div class="field">
           <label>Your Name</label>
-          <input type="text" id="studentName" placeholder="Full name" value="Basith"/>
+          <input id="studentName" type="text" placeholder="Full name" value="Abdul Basith" oninput="refreshPreview()"/>
         </div>
         <div class="field">
           <label>Roll Number</label>
-          <input type="text" id="rollNumber" placeholder="e.g. 25U201" value="25U201"/>
+          <input id="rollNumber" type="text" placeholder="e.g. 25U201" value="25U201" oninput="refreshPreview()"/>
         </div>
       </div>
     </div>
 
-    <!-- Figures Section -->
+    <!-- FIGURES -->
     <div>
-      <div class="figures-header">
-        <div>
-          <div class="section-label" style="margin-bottom:4px">Circuit Figures</div>
-          <div class="figures-title">Upload &amp; Caption Your Diagrams</div>
+      <div class="slabel">Figures</div>
+      <div class="figs-hdr">
+        <div class="figs-title">Upload &amp; Caption Diagrams</div>
+        <button class="btn-add" onclick="addCard()">＋ &nbsp;Add Figure</button>
+      </div>
+    </div>
+
+    <div class="cards" id="cards">
+      <div class="empty" id="emptyState">
+        <div class="ei">🖼️</div>
+        <p>No figures yet — click <strong>Add Figure</strong> to start.</p>
+      </div>
+    </div>
+
+    <!-- LIVE PREVIEW -->
+    <div class="preview-section">
+      <div class="preview-title">📄 PDF Preview</div>
+      <div class="pdf-preview" id="pdfPreview">
+        <div style="color:#aaa;text-align:center;padding:20px 0;font-family:sans-serif;font-size:13px">
+          Add figures above to see a preview here.
         </div>
-        <button class="btn-add" onclick="addFigure()">＋ &nbsp;Add Figure</button>
       </div>
     </div>
 
-    <div class="fig-cards" id="figCards">
-      <!-- cards injected here -->
-      <div class="empty-state" id="emptyState">
-        <div class="em-icon">🖼️</div>
-        <p>No figures yet — click <strong>Add Figure</strong> to begin.</p>
-      </div>
-    </div>
-
-    <!-- Generate -->
-    <div class="generate-wrap">
-      <button class="btn-generate" id="genBtn" onclick="generatePDF()">
-        <span class="btn-icon">⬇</span>
-        Generate &amp; Download PDF
+    <!-- GENERATE -->
+    <div class="gen-wrap">
+      <button class="btn-gen" id="genBtn" onclick="generatePDF()">
+        <span>⬇</span> Generate &amp; Download PDF
       </button>
     </div>
 
-  </div><!-- /body -->
-</div><!-- /shell -->
+  </div>
+</div>
 
 <script>
-/* ── STATE ─────────────────────────────────── */
+/* ─────────────────────────────────────────
+   STATE
+───────────────────────────────────────── */
 let counter = 0;
 let busy    = false;
-const cards = {}; // id → { base64, caption }
+const cards = {}; // id → { base64, caption, type }
 
-/* ── TOAST ──────────────────────────────────── */
-function toast(msg, dur = 3000) {
+/* ─────────────────────────────────────────
+   TOAST
+───────────────────────────────────────── */
+function toast(msg, type='', dur=3500) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), dur);
+  t.className = 'show ' + type;
+  setTimeout(() => { t.className = ''; }, dur);
 }
 
-/* ── PROGRESS ───────────────────────────────── */
-function setProgress(pct) {
-  document.getElementById('progress-bar').style.width = pct + '%';
-}
+/* ─────────────────────────────────────────
+   PROGRESS
+───────────────────────────────────────── */
+function pct(v) { document.getElementById('pbar').style.width = v + '%'; }
 
-/* ── ADD FIGURE ─────────────────────────────── */
-function addFigure() {
+/* ─────────────────────────────────────────
+   ADD / REMOVE CARD
+───────────────────────────────────────── */
+function addCard() {
   counter++;
   const id = counter;
-  cards[id] = { base64: null, caption: '' };
+  cards[id] = { base64: null, caption: '', type: 'JPEG' };
 
   document.getElementById('emptyState')?.remove();
 
-  const card = document.createElement('div');
-  card.className = 'fig-card';
-  card.id = `card-${id}`;
-  card.innerHTML = `
-    <div class="fig-num">${id}</div>
-    <div class="fig-body">
-      <!-- Drop Zone -->
-      <div class="drop-zone" id="dz-${id}"
-           ondragover="dzOver(event,'${id}')"
-           ondragleave="dzLeave('${id}')"
-           ondrop="dzDrop(event,'${id}')">
+  const div = document.createElement('div');
+  div.className = 'card';
+  div.id = `card-${id}`;
+  div.innerHTML = `
+    <div class="num">${id}</div>
+    <div class="card-body">
+      <div class="dz" id="dz-${id}"
+           ondragover="dzOver(event,${id})"
+           ondragleave="dzLeave(${id})"
+           ondrop="dzDrop(event,${id})">
         <input type="file" accept="image/*" onchange="fileChosen(this,${id})"/>
-        <div class="drop-icon">📂</div>
-        <div class="drop-text">Click or drag &amp; drop image here</div>
-        <div class="drop-hint">PNG, JPG, BMP, WEBP</div>
+        <div class="dz-icon">📂</div>
+        <div class="dz-txt">Click or drag &amp; drop image</div>
+        <div class="dz-hint">PNG · JPG · BMP · WEBP</div>
       </div>
-      <!-- Thumb -->
       <div class="thumb-wrap" id="tw-${id}">
         <img id="thumb-${id}" src="" alt="preview"/>
-        <button class="thumb-clear" onclick="clearImage(${id})" title="Remove image">✕</button>
+        <button class="thumb-clr" onclick="clearImg(${id})" title="Remove">✕</button>
       </div>
-      <!-- Caption -->
-      <div class="caption-wrap">
-        <label>Figure Caption</label>
-        <input type="text" id="cap-${id}" placeholder="e.g. Fig 6.1 LM317 Adjustable Voltage Regulator"
-               oninput="cards[${id}].caption = this.value"/>
+      <div class="cap-wrap">
+        <label>Caption</label>
+        <input type="text" id="cap-${id}"
+               placeholder="e.g. Fig 6.1 LM317 Adjustable Voltage Regulator."
+               oninput="cards[${id}].caption=this.value; refreshPreview()"/>
       </div>
     </div>
-    <button class="btn-remove" onclick="removeFigure(${id})" title="Remove">✕</button>
+    <button class="btn-rm" onclick="removeCard(${id})" title="Remove figure">✕</button>
   `;
-  document.getElementById('figCards').appendChild(card);
+  document.getElementById('cards').appendChild(div);
 }
 
-/* ── REMOVE FIGURE ──────────────────────────── */
-function removeFigure(id) {
+function removeCard(id) {
   const c = document.getElementById(`card-${id}`);
-  if (c) {
-    c.style.opacity = '0';
-    c.style.transform = 'translateY(-6px)';
-    c.style.transition = 'all .18s ease';
-    setTimeout(() => { c.remove(); delete cards[id]; checkEmpty(); }, 180);
-  }
+  if (!c) return;
+  c.style.opacity = '0';
+  c.style.transform = 'translateY(-6px)';
+  c.style.transition = 'all .18s ease';
+  setTimeout(() => {
+    c.remove();
+    delete cards[id];
+    checkEmpty();
+    refreshPreview();
+  }, 180);
 }
 
 function checkEmpty() {
-  if (!document.querySelector('.fig-card')) {
+  if (!document.querySelector('.card')) {
     const e = document.createElement('div');
-    e.className = 'empty-state'; e.id = 'emptyState';
-    e.innerHTML = '<div class="em-icon">🖼️</div><p>No figures yet — click <strong>Add Figure</strong> to begin.</p>';
-    document.getElementById('figCards').appendChild(e);
+    e.className = 'empty'; e.id = 'emptyState';
+    e.innerHTML = '<div class="ei">🖼️</div><p>No figures yet — click <strong>Add Figure</strong> to start.</p>';
+    document.getElementById('cards').appendChild(e);
   }
 }
 
-/* ── FILE & DRAG ─────────────────────────────── */
+/* ─────────────────────────────────────────
+   FILE / DRAG
+───────────────────────────────────────── */
 function fileChosen(input, id) {
   const file = input.files[0];
-  if (!file) return;
-  readFile(file, id);
+  if (file) readFile(file, id);
 }
-function dzOver(e, id)  { e.preventDefault(); document.getElementById('dz-'+id).classList.add('drag-over'); }
-function dzLeave(id)    { document.getElementById('dz-'+id).classList.remove('drag-over'); }
+function dzOver(e, id)  { e.preventDefault(); document.getElementById('dz-'+id).classList.add('over'); }
+function dzLeave(id)    { document.getElementById('dz-'+id).classList.remove('over'); }
 function dzDrop(e, id)  {
-  e.preventDefault();
-  dzLeave(id);
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) readFile(file, id);
+  e.preventDefault(); dzLeave(id);
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) readFile(f, id);
 }
 function readFile(file, id) {
   const reader = new FileReader();
   reader.onload = ev => {
-    cards[id].base64 = ev.target.result;
-    document.getElementById('thumb-'+id).src = ev.target.result;
+    const b64 = ev.target.result;
+    // Detect type from data URL
+    const imgType = b64.startsWith('data:image/png') ? 'PNG'
+                  : b64.startsWith('data:image/webp') ? 'WEBP'
+                  : 'JPEG';
+    cards[id].base64  = b64;
+    cards[id].type    = imgType;
+    document.getElementById('thumb-'+id).src = b64;
     document.getElementById('tw-'+id).style.display = 'block';
-    document.getElementById('dz-'+id).style.display = 'none';
+    document.getElementById('dz-'+id).style.display  = 'none';
+    refreshPreview();
   };
   reader.readAsDataURL(file);
 }
-function clearImage(id) {
+function clearImg(id) {
   cards[id].base64 = null;
   document.getElementById('thumb-'+id).src = '';
-  document.getElementById('tw-'+id).style.display = 'none';
-  document.getElementById('dz-'+id).style.display = 'flex';
+  document.getElementById('tw-'+id).style.display  = 'none';
+  document.getElementById('dz-'+id).style.display  = '';
+  refreshPreview();
 }
 
-/* ── PDF GENERATION ──────────────────────────── */
-async function generatePDF() {
-  if (busy) return;
+/* ─────────────────────────────────────────
+   LIVE PREVIEW (HTML mock of PDF layout)
+───────────────────────────────────────── */
+function refreshPreview() {
+  const title  = document.getElementById('mainTitle').value.trim()   || 'EXPERIMENT';
+  const name   = document.getElementById('studentName').value.trim() || 'Student';
+  const rollno = document.getElementById('rollNumber').value.trim()  || 'Roll No';
 
-  const title  = document.getElementById('mainTitle').value.trim()    || 'EXPERIMENT';
-  const name   = document.getElementById('studentName').value.trim()  || 'Student';
-  const rollno = document.getElementById('rollNumber').value.trim()   || 'Roll No';
-
-  // Collect figures that have images
-  const figs = Object.entries(cards)
-    .filter(([,v]) => v.base64)
-    .map(([,v]) => ({ img: v.base64, caption: v.caption || 'Figure' }));
+  const figs = getFilledFigs();
+  const p    = document.getElementById('pdfPreview');
 
   if (figs.length === 0) {
-    toast('⚠️ Upload at least one image first!');
+    p.innerHTML = '<div style="color:#aaa;text-align:center;padding:20px 0;font-family:sans-serif;font-size:13px">Add figures above to see a preview here.</div>';
     return;
   }
 
-  // Lock
+  let html = `<div class="pp-title">${esc(title)}</div>`;
+  figs.forEach(f => {
+    html += `<div class="pp-fig">
+      <img src="${f.img}" alt=""/>
+      <div class="pp-cap">${esc(f.caption)}</div>
+    </div>`;
+  });
+  html += `<div class="pp-footer">${esc(name)}<br/>${esc(rollno)}</div>`;
+  p.innerHTML = html;
+}
+
+/* ─────────────────────────────────────────
+   COLLECT FILLED FIGS
+───────────────────────────────────────── */
+function getFilledFigs() {
+  return Object.entries(cards)
+    .filter(([,v]) => v.base64)
+    .map(([,v]) => ({ img: v.base64, caption: v.caption || 'Figure', type: v.type }));
+}
+
+/* ─────────────────────────────────────────
+   GET IMAGE NATURAL DIMENSIONS
+───────────────────────────────────────── */
+function imgDims(src) {
+  return new Promise(res => {
+    const i = new Image();
+    i.onload  = () => res({ w: i.naturalWidth, h: i.naturalHeight });
+    i.onerror = () => res({ w: 800, h: 600 }); // fallback
+    i.src = src;
+  });
+}
+
+/* ─────────────────────────────────────────
+   PDF GENERATION — pure jsPDF addImage
+   No html2canvas → No blank PDF bug
+───────────────────────────────────────── */
+async function generatePDF() {
+  if (busy) return;
+
+  const title  = document.getElementById('mainTitle').value.trim()   || 'EXPERIMENT';
+  const name   = document.getElementById('studentName').value.trim() || 'Student';
+  const rollno = document.getElementById('rollNumber').value.trim()  || 'Roll No';
+  const figs   = getFilledFigs();
+
+  if (figs.length === 0) {
+    toast('⚠️  Upload at least one image first!', 'err');
+    return;
+  }
+
   busy = true;
   const btn = document.getElementById('genBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block">⏳</span>&nbsp; Generating PDF…';
-
-  setProgress(10);
+  btn.innerHTML = '<span class="spin">⏳</span>&nbsp; Building PDF…';
+  pct(10);
 
   try {
-    // Build stage HTML
-    const stage = document.getElementById('pdf-stage');
-    stage.innerHTML = buildPDFHTML(title, name, rollno, figs);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
-    setProgress(30);
+    /* ── PAGE CONSTANTS ── */
+    const PW   = 210;           // page width  mm
+    const PH   = 297;           // page height mm
+    const ML   = 18;            // margin left
+    const MR   = 18;            // margin right
+    const MT   = 20;            // margin top
+    const MB   = 22;            // margin bottom (footer area)
+    const CW   = PW - ML - MR;  // content width
 
-    // Wait for images to fully paint
-    await waitForImages(stage);
-    setProgress(55);
+    const FOOTER_AREA_H = 18;   // space reserved at bottom for footer
+    const MAX_Y  = PH - MB - FOOTER_AREA_H; // last usable Y before footer
 
-    // Small breathing room
-    await delay(200);
-    setProgress(70);
+    /* ── DRAW FOOTER ── */
+    function drawFooter(doc) {
+      doc.setFont('times', 'bold');
+      doc.setFontSize(13);
+      doc.text(name,   PW - MR, PH - MB + 2,  { align: 'right' });
+      doc.text(rollno, PW - MR, PH - MB + 10, { align: 'right' });
+    }
 
+    /* ── PAGE 1 TITLE ── */
+    let y = MT;
+    const titleText = title.toUpperCase();
+    doc.setFont('times', 'bold');
+    doc.setFontSize(22);
+    const titleW = doc.getTextWidth(titleText);
+    doc.text(titleText, PW / 2, y + 10, { align: 'center' });
+    // Manual underline
+    doc.setLineWidth(0.6);
+    doc.line(PW/2 - titleW/2, y + 12, PW/2 + titleW/2, y + 12);
+    y += 28;
+
+    pct(30);
+
+    /* ── FIGURES LOOP ── */
+    for (let i = 0; i < figs.length; i++) {
+      const fig = figs[i];
+      pct(30 + Math.floor((i / figs.length) * 55));
+
+      // Get real dimensions for aspect ratio
+      const dim = await imgDims(fig.img);
+      const ratio = dim.w / dim.h;
+
+      // Fit to content width, cap height at 110mm
+      let iW = CW;
+      let iH = iW / ratio;
+      if (iH > 110) { iH = 110; iW = iH * ratio; }
+      // Keep within content width after height cap
+      if (iW > CW) { iW = CW; iH = iW / ratio; }
+
+      const capH    = 8;   // mm for caption line
+      const gap     = 5;   // mm gap between image bottom and caption
+      const blockH  = iH + gap + capH + 8; // total block height
+
+      /* Need a new page? */
+      if (y + blockH > MAX_Y) {
+        drawFooter(doc);
+        doc.addPage();
+        y = MT;
+      }
+
+      /* Draw image centred */
+      const iX = ML + (CW - iW) / 2;
+      doc.addImage(fig.img, fig.type, iX, y, iW, iH);
+      y += iH + gap;
+
+      /* Caption — bold, centred */
+      doc.setFont('times', 'bold');
+      doc.setFontSize(13);
+      doc.text(fig.caption, PW / 2, y + 4, { align: 'center' });
+      y += capH + 8;
+    }
+
+    /* Footer on last page */
+    drawFooter(doc);
+
+    pct(95);
+
+    /* ── SAVE — fires exactly ONE download ── */
     const filename = `${title.replace(/\s+/g,'_')}_${rollno}.pdf`;
+    doc.save(filename);
 
-    const opt = {
-      margin:      [16, 15, 16, 15],
-      filename,
-      image:       { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2.5, useCORS: true, windowWidth: 794, logging: false, imageTimeout: 15000 },
-      jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak:   { mode: ['css', 'legacy'], avoid: '.pdf-fig' }
-    };
-
-    setProgress(80);
-
-    // ── FIX for double-PDF: use outputPdf('blob') then trigger download ONCE ──
-    const worker = html2pdf().set(opt).from(stage);
-    const blob   = await worker.outputPdf('blob');
-
-    setProgress(95);
-
-    triggerDownload(blob, filename);
-
-    // Cleanup
-    stage.innerHTML = '';
-    setProgress(100);
-    toast('✅ PDF downloaded successfully!');
-
-    setTimeout(() => setProgress(0), 800);
+    pct(100);
+    toast('✅  PDF downloaded!', 'ok');
+    setTimeout(() => pct(0), 800);
 
   } catch (err) {
     console.error(err);
-    toast('❌ Error generating PDF. Please try again.');
-    document.getElementById('pdf-stage').innerHTML = '';
-    setProgress(0);
+    toast('❌  Error: ' + err.message, 'err');
+    pct(0);
   } finally {
     busy = false;
     btn.disabled = false;
-    btn.innerHTML = '<span class="btn-icon">⬇</span> Generate &amp; Download PDF';
+    btn.innerHTML = '<span>⬇</span> Generate &amp; Download PDF';
   }
 }
 
-/* ── TRIGGER DOWNLOAD (fires exactly once) ──── */
-function triggerDownload(blob, filename) {
-  const url  = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href     = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
-
-/* ── BUILD PDF HTML ──────────────────────────── */
-function buildPDFHTML(title, name, rollno, figs) {
-  let html = `
-    <div class="pdf-page">
-      <div class="pdf-h1">${escHtml(title)}</div>
-  `;
-
-  figs.forEach(f => {
-    html += `
-      <div class="pdf-fig">
-        <img src="${f.img}" alt="${escHtml(f.caption)}"/>
-        <div class="pdf-caption">${escHtml(f.caption)}</div>
-      </div>
-    `;
-  });
-
-  html += `
-      <div class="pdf-footer">${escHtml(name)}<br/>${escHtml(rollno)}</div>
-    </div>
-  `;
-  return html;
-}
-
-function escHtml(s) {
+/* ─────────────────────────────────────────
+   UTILS
+───────────────────────────────────────── */
+function esc(s) {
   return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-/* ── HELPERS ─────────────────────────────────── */
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function waitForImages(container) {
-  const imgs = [...container.querySelectorAll('img')];
-  return Promise.all(imgs.map(img =>
-    img.complete
-      ? Promise.resolve()
-      : new Promise(res => { img.onload = res; img.onerror = res; })
-  ));
-}
-
-/* ── INIT ────────────────────────────────────── */
+/* ─────────────────────────────────────────
+   INIT — start with 2 rows
+───────────────────────────────────────── */
 window.addEventListener('DOMContentLoaded', () => {
-  addFigure();
-  addFigure();
+  addCard();
+  addCard();
 });
-
-/* spinner keyframe */
-const style = document.createElement('style');
-style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-document.head.appendChild(style);
 </script>
 </body>
 </html>
