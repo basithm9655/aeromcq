@@ -1,331 +1,774 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lab Report PDF Generator</title>
-    <!-- Tailwind CSS for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- html2pdf.js for PDF Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <style>
-        /* Custom scrollbar for a polished UI */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lab Report Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  /* ── RESET & BASE ─────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink:    #0f1923;
+    --ink2:   #3d4f5c;
+    --ink3:   #7a8e9a;
+    --paper:  #f6f3ee;
+    --paper2: #ede9e2;
+    --gold:   #c8973a;
+    --gold2:  #f0c060;
+    --accent: #1a3a5c;
+    --red:    #c0392b;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(15,25,35,.10);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 24px 12px 60px;
+  }
 
-        /* * STRICT PDF EXPORT STYLES 
-         * These styles ensure the PDF looks exactly like your reference document
-         */
-        .pdf-export-container {
-            width: 800px; /* Force consistent desktop width for A4 proportion */
-            background-color: white;
-            color: black;
-            font-family: 'Times New Roman', Times, serif;
-            padding: 40px;
-            box-sizing: border-box;
-            position: absolute;
-            left: -9999px; /* Keep it off-screen to avoid UI disruption */
-            top: 0;
-        }
-        .pdf-export-title {
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            text-transform: uppercase;
-            text-decoration: underline;
-            margin-bottom: 40px;
-        }
-        .pdf-export-figure {
-            margin-bottom: 40px;
-            text-align: center;
-            page-break-inside: avoid; /* CRITICAL: Prevents image cutting across pages */
-        }
-        .pdf-export-img {
-            max-width: 100%;
-            max-height: 420px; /* Fits exactly 2 images per A4 page beautifully */
-            object-fit: contain;
-            margin: 0 auto 10px auto;
-            display: block;
-        }
-        .pdf-export-caption {
-            font-size: 16px;
-            font-weight: bold;
-            text-align: center;
-        }
-        .pdf-export-footer {
-            text-align: right;
-            font-size: 16px;
-            font-weight: bold;
-            margin-top: 50px;
-            page-break-inside: avoid;
-        }
-        
-        /* Loading Overlay to prevent double clicks */
-        #loadingOverlay {
-            backdrop-filter: blur(4px);
-            transition: opacity 0.3s ease;
-        }
-    </style>
+  /* ── LAYOUT ──────────────────────────────── */
+  .shell {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: var(--shadow), 0 1px 0 rgba(200,151,58,.3);
+    border: 1px solid var(--paper2);
+  }
+
+  /* ── HEADER ──────────────────────────────── */
+  .header {
+    background: var(--accent);
+    padding: 28px 36px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon {
+    width: 44px; height: 44px;
+    background: var(--gold);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .header-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: #fff;
+    letter-spacing: .01em;
+  }
+  .header-sub {
+    font-size: 12px;
+    color: #8fa9c0;
+    margin-top: 2px;
+    font-weight: 300;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .header-badge {
+    background: rgba(200,151,58,.18);
+    border: 1px solid rgba(200,151,58,.35);
+    color: var(--gold2);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  /* ── BODY ────────────────────────────────── */
+  .body {
+    background: #fff;
+    padding: 32px 36px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  /* ── SECTION LABEL ───────────────────────── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--paper2);
+  }
+
+  /* ── FORM GRID ───────────────────────────── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.5fr;
+    gap: 16px;
+  }
+  @media(max-width:600px){ .form-grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink2);
+  }
+  .field input {
+    background: var(--paper);
+    border: 1.5px solid var(--paper2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .field input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(200,151,58,.12);
+    background: #fff;
+  }
+
+  /* ── FIGURES HEADER ──────────────────────── */
+  .figures-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .figures-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px;
+    color: var(--ink);
+  }
+  .btn-add {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+    user-select: none;
+  }
+  .btn-add:hover { background: #0e2740; }
+  .btn-add:active { transform: scale(.97); }
+
+  /* ── FIGURE CARD ─────────────────────────── */
+  .fig-cards { display: flex; flex-direction: column; gap: 14px; }
+  .fig-card {
+    background: var(--paper);
+    border: 1.5px solid var(--paper2);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+    align-items: start;
+    transition: border-color .2s, box-shadow .2s;
+    animation: slideIn .22s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fig-card:hover { border-color: #c8c0b0; box-shadow: 0 2px 12px rgba(0,0,0,.05); }
+  @media(max-width:600px) { .fig-card { grid-template-columns: 1fr; } }
+
+  /* Number badge */
+  .fig-num {
+    width: 30px; height: 30px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .fig-body { display: flex; flex-direction: column; gap: 12px; }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed #c8c0b0;
+    border-radius: 8px;
+    padding: 18px 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    position: relative;
+    background: #fff;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--gold);
+    background: #fffbf3;
+  }
+  .drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-icon { font-size: 26px; }
+  .drop-text { font-size: 12px; color: var(--ink3); font-weight: 500; }
+  .drop-hint { font-size: 10px; color: #aaa; }
+
+  /* Preview */
+  .thumb-wrap {
+    display: none;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1.5px solid var(--paper2);
+    background: var(--paper);
+  }
+  .thumb-wrap img {
+    display: block;
+    width: 100%;
+    max-height: 180px;
+    object-fit: contain;
+    background: #fff;
+  }
+  .thumb-clear {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 24px; height: 24px;
+    background: rgba(0,0,0,.55);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .thumb-clear:hover { background: var(--red); }
+
+  /* Caption input */
+  .caption-wrap { display: flex; flex-direction: column; gap: 5px; }
+  .caption-wrap label { font-size: 11px; font-weight: 600; color: var(--ink3); letter-spacing: .04em; text-transform: uppercase; }
+  .caption-wrap input {
+    background: #fff;
+    border: 1.5px solid var(--paper2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    outline: none;
+    transition: border-color .2s;
+  }
+  .caption-wrap input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(200,151,58,.1);
+  }
+
+  /* Remove btn */
+  .btn-remove {
+    background: none;
+    border: none;
+    color: #bbb;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: color .15s, background .15s;
+    margin-top: 2px;
+  }
+  .btn-remove:hover { color: var(--red); background: #fdecea; }
+
+  /* ── EMPTY STATE ─────────────────────────── */
+  .empty-state {
+    text-align: center;
+    padding: 36px 20px;
+    color: var(--ink3);
+    border: 2px dashed var(--paper2);
+    border-radius: var(--radius);
+  }
+  .empty-state .em-icon { font-size: 36px; margin-bottom: 10px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── GENERATE BUTTON ─────────────────────── */
+  .generate-wrap {
+    padding-top: 8px;
+  }
+  .btn-generate {
+    width: 100%;
+    background: var(--gold);
+    color: var(--ink);
+    border: none;
+    border-radius: 10px;
+    padding: 16px 24px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: .02em;
+    transition: background .2s, transform .1s, box-shadow .2s;
+    box-shadow: 0 4px 18px rgba(200,151,58,.30);
+  }
+  .btn-generate:hover { background: var(--gold2); box-shadow: 0 6px 24px rgba(200,151,58,.38); }
+  .btn-generate:active { transform: scale(.98); }
+  .btn-generate:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+  .btn-icon { font-size: 20px; }
+
+  /* ── TOAST ───────────────────────────────── */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--ink);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 40px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 9999;
+    transition: transform .3s cubic-bezier(.22,1,.36,1), opacity .3s;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ── PROGRESS BAR ────────────────────────── */
+  #progress-bar {
+    height: 3px;
+    background: var(--gold);
+    width: 0%;
+    transition: width .4s ease;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 9998;
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* ── PDF RENDER CONTAINER (offscreen) ─────── */
+  #pdf-stage {
+    position: fixed;
+    left: -9999px;
+    top: 0;
+    width: 794px; /* A4 @ 96dpi */
+    background: #fff;
+    color: #000;
+    font-family: 'Times New Roman', serif;
+    padding: 0;
+    z-index: -1;
+  }
+  .pdf-page {
+    width: 794px;
+    min-height: 1123px;
+    padding: 50px 55px;
+    box-sizing: border-box;
+    page-break-after: always;
+    background: #fff;
+    position: relative;
+  }
+  .pdf-page:last-child { page-break-after: auto; }
+  .pdf-h1 {
+    font-family: 'Times New Roman', serif;
+    font-size: 20pt;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    text-decoration: underline;
+    margin-bottom: 36px;
+    color: #000;
+  }
+  .pdf-fig {
+    page-break-inside: avoid;
+    margin-bottom: 36px;
+    text-align: center;
+  }
+  .pdf-fig img {
+    display: block;
+    max-width: 100%;
+    max-height: 380px;
+    margin: 0 auto 10px;
+    object-fit: contain;
+  }
+  .pdf-caption {
+    font-family: 'Times New Roman', serif;
+    font-size: 13pt;
+    font-weight: bold;
+    text-align: center;
+    color: #000;
+  }
+  .pdf-footer {
+    font-family: 'Times New Roman', serif;
+    font-size: 13pt;
+    font-weight: bold;
+    text-align: right;
+    color: #000;
+    margin-top: 40px;
+    page-break-inside: avoid;
+    line-height: 1.6;
+  }
+</style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800 font-sans p-4 md:p-8 selection:bg-indigo-200">
+<body>
 
-    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 relative">
-        
-        <!-- Premium Header -->
-        <div class="bg-gradient-to-r from-indigo-700 to-indigo-500 px-6 py-5 text-white flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <i data-lucide="file-check-2" class="w-7 h-7 text-indigo-100"></i>
-                <h1 class="text-2xl font-bold tracking-tight">Automated Lab Report</h1>
-            </div>
-            <div class="hidden md:block text-indigo-100 text-sm font-medium bg-indigo-800/30 px-3 py-1 rounded-full border border-indigo-400/30">
-                High-Quality PDF Engine
-            </div>
+<div id="progress-bar"></div>
+<div id="toast"></div>
+
+<!-- ── OFF-SCREEN PDF STAGE ───────────────────── -->
+<div id="pdf-stage"></div>
+
+<div class="shell">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">📋</div>
+      <div>
+        <div class="header-title">Lab Report Generator</div>
+        <div class="header-sub">Automated PDF export &nbsp;·&nbsp; High quality</div>
+      </div>
+    </div>
+    <div class="header-badge">A4 · PDF</div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- Info Section -->
+    <div>
+      <div class="section-label">Report Details</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Main Title</label>
+          <input type="text" id="mainTitle" placeholder="e.g. EXPERIMENT 1 – Voltage Regulator" value="EXPERIMENT 1"/>
         </div>
-
-        <div class="p-6 md:p-8">
-            <!-- Global Information Form -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 pb-8 border-b border-slate-100">
-                <div class="md:col-span-1">
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Main Title</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i data-lucide="heading-1" class="w-4 h-4 text-slate-400"></i>
-                        </div>
-                        <input type="text" id="mainTitle" value="EXPERIMENT 1" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all shadow-sm">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Your Name</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
-                        </div>
-                        <input type="text" id="studentName" value="basith" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all shadow-sm">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Roll Number</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i data-lucide="hash" class="w-4 h-4 text-slate-400"></i>
-                        </div>
-                        <input type="text" id="rollNumber" value="25u201" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all shadow-sm">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dynamic Figures Section -->
-            <div class="mb-6 flex flex-col md:flex-row justify-between md:items-end gap-4">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <i data-lucide="image" class="w-5 h-5 text-indigo-500"></i> Circuit Figures
-                    </h2>
-                    <p class="text-sm text-slate-500 mt-1">Upload screenshots and enter exact captions.</p>
-                </div>
-                <button onclick="addFigureRow()" class="flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-5 py-2.5 rounded-xl font-bold transition-colors text-sm border border-indigo-200 shadow-sm">
-                    <i data-lucide="plus-circle" class="w-5 h-5"></i> Add Figure
-                </button>
-            </div>
-
-            <div id="figuresContainer" class="space-y-5">
-                <!-- Figure rows will be injected here -->
-            </div>
-
-            <!-- Action Section -->
-            <div class="mt-10 pt-8 border-t border-slate-100 flex justify-center">
-                <button onclick="generatePDF()" id="generateBtn" class="flex items-center gap-3 bg-slate-800 hover:bg-slate-900 text-white px-12 py-4 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-xl w-full md:w-auto justify-center group relative overflow-hidden">
-                    <i data-lucide="download" class="w-6 h-6 group-hover:-translate-y-1 transition-transform"></i> 
-                    <span>Generate PDF Document</span>
-                </button>
-            </div>
+        <div class="field">
+          <label>Your Name</label>
+          <input type="text" id="studentName" placeholder="Full name" value="Basith"/>
         </div>
-
-        <!-- Full-screen loading overlay to prevent double generation -->
-        <div id="loadingOverlay" class="absolute inset-0 bg-white/80 z-50 hidden flex-col items-center justify-center rounded-2xl">
-            <i data-lucide="loader-2" class="w-12 h-12 text-indigo-600 animate-spin mb-4"></i>
-            <p class="text-lg font-bold text-slate-800">Generating High-Quality PDF...</p>
-            <p class="text-sm text-slate-500 mt-1">Please wait, arranging pages.</p>
+        <div class="field">
+          <label>Roll Number</label>
+          <input type="text" id="rollNumber" placeholder="e.g. 25U201" value="25U201"/>
         </div>
+      </div>
     </div>
 
-    <script>
-        // Initialize Icons
-        lucide.createIcons();
+    <!-- Figures Section -->
+    <div>
+      <div class="figures-header">
+        <div>
+          <div class="section-label" style="margin-bottom:4px">Circuit Figures</div>
+          <div class="figures-title">Upload &amp; Caption Your Diagrams</div>
+        </div>
+        <button class="btn-add" onclick="addFigure()">＋ &nbsp;Add Figure</button>
+      </div>
+    </div>
 
-        let figureCounter = 0;
-        let isGenerating = false; // Lock variable to prevent double clicks
+    <div class="fig-cards" id="figCards">
+      <!-- cards injected here -->
+      <div class="empty-state" id="emptyState">
+        <div class="em-icon">🖼️</div>
+        <p>No figures yet — click <strong>Add Figure</strong> to begin.</p>
+      </div>
+    </div>
 
-        // Function to add a new figure row
-        function addFigureRow() {
-            figureCounter++;
-            const rowId = `figure-row-${figureCounter}`;
-            
-            const rowHTML = `
-                <div id="${rowId}" class="bg-white border-2 border-dashed border-slate-200 p-5 rounded-2xl flex flex-col md:flex-row gap-5 items-start relative group hover:border-indigo-300 transition-colors">
-                    
-                    <div class="w-full md:w-1/3">
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Upload Screenshot</label>
-                        <input type="file" accept="image/*" onchange="previewImage(this, 'preview-${figureCounter}')" class="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer transition-colors">
-                        <input type="hidden" id="base64-${figureCounter}">
-                    </div>
-                    
-                    <div class="w-full md:w-2/3">
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Figure Name / Caption</label>
-                        <input type="text" id="caption-${figureCounter}" placeholder="e.g. Fig 6.1 LM317 Adjustable Voltage Regulator" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none text-sm transition-all font-medium text-slate-800">
-                    </div>
-                    
-                    <button onclick="removeFigureRow('${rowId}')" class="md:absolute right-4 top-4 text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors mt-2 md:mt-0 ml-auto" title="Remove Figure">
-                        <i data-lucide="trash-2" class="w-5 h-5"></i>
-                    </button>
+    <!-- Generate -->
+    <div class="generate-wrap">
+      <button class="btn-generate" id="genBtn" onclick="generatePDF()">
+        <span class="btn-icon">⬇</span>
+        Generate &amp; Download PDF
+      </button>
+    </div>
 
-                    <!-- Thumbnail Preview -->
-                    <div class="w-full mt-4 hidden" id="preview-container-${figureCounter}">
-                        <div class="relative inline-block">
-                            <img id="preview-${figureCounter}" class="h-32 rounded-lg border shadow-sm object-cover bg-slate-50">
-                            <div class="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-lg pointer-events-none"></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('figuresContainer').insertAdjacentHTML('beforeend', rowHTML);
-            lucide.createIcons();
-        }
+  </div><!-- /body -->
+</div><!-- /shell -->
 
-        // Function to remove a row with animation
-        function removeFigureRow(rowId) {
-            const row = document.getElementById(rowId);
-            row.style.opacity = '0';
-            row.style.transform = 'scale(0.98)';
-            row.style.transition = 'all 0.2s ease-out';
-            setTimeout(() => row.remove(), 200); 
-        }
+<script>
+/* ── STATE ─────────────────────────────────── */
+let counter = 0;
+let busy    = false;
+const cards = {}; // id → { base64, caption }
 
-        // Convert image to Base64 (Required for local PDF generation)
-        function previewImage(inputElement, previewImgId) {
-            const file = inputElement.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.getElementById(previewImgId);
-                    img.src = e.target.result;
-                    document.getElementById(`preview-container-${previewImgId.split('-')[1]}`).classList.remove('hidden');
-                    document.getElementById(`base64-${previewImgId.split('-')[1]}`).value = e.target.result;
-                }
-                reader.readAsDataURL(file);
-            }
-        }
+/* ── TOAST ──────────────────────────────────── */
+function toast(msg, dur = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
 
-        // Function to generate and download the PDF securely
-        async function generatePDF() {
-            // Prevent double execution
-            if (isGenerating) return; 
-            
-            const mainTitle = document.getElementById('mainTitle').value.trim() || 'EXPERIMENT';
-            const studentName = document.getElementById('studentName').value.trim() || 'Student Name';
-            const rollNumber = document.getElementById('rollNumber').value.trim() || 'Roll No';
-            
-            const rows = document.getElementById('figuresContainer').children;
-            const figuresData = [];
+/* ── PROGRESS ───────────────────────────────── */
+function setProgress(pct) {
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
 
-            // Gather all image data and captions
-            for (let i = 0; i < rows.length; i++) {
-                const idNum = rows[i].id.split('-')[2];
-                const base64Input = document.getElementById(`base64-${idNum}`);
-                const captionInput = document.getElementById(`caption-${idNum}`);
-                
-                if (base64Input && base64Input.value) {
-                    figuresData.push({
-                        image: base64Input.value,
-                        caption: captionInput.value || `Figure ${i + 1}`
-                    });
-                }
-            }
+/* ── ADD FIGURE ─────────────────────────────── */
+function addFigure() {
+  counter++;
+  const id = counter;
+  cards[id] = { base64: null, caption: '' };
 
-            if (figuresData.length === 0) {
-                alert("Please upload at least one image before generating your PDF.");
-                return;
-            }
+  document.getElementById('emptyState')?.remove();
 
-            // Lock the UI
-            isGenerating = true;
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.classList.remove('hidden');
-            overlay.classList.add('flex');
+  const card = document.createElement('div');
+  card.className = 'fig-card';
+  card.id = `card-${id}`;
+  card.innerHTML = `
+    <div class="fig-num">${id}</div>
+    <div class="fig-body">
+      <!-- Drop Zone -->
+      <div class="drop-zone" id="dz-${id}"
+           ondragover="dzOver(event,'${id}')"
+           ondragleave="dzLeave('${id}')"
+           ondrop="dzDrop(event,'${id}')">
+        <input type="file" accept="image/*" onchange="fileChosen(this,${id})"/>
+        <div class="drop-icon">📂</div>
+        <div class="drop-text">Click or drag &amp; drop image here</div>
+        <div class="drop-hint">PNG, JPG, BMP, WEBP</div>
+      </div>
+      <!-- Thumb -->
+      <div class="thumb-wrap" id="tw-${id}">
+        <img id="thumb-${id}" src="" alt="preview"/>
+        <button class="thumb-clear" onclick="clearImage(${id})" title="Remove image">✕</button>
+      </div>
+      <!-- Caption -->
+      <div class="caption-wrap">
+        <label>Figure Caption</label>
+        <input type="text" id="cap-${id}" placeholder="e.g. Fig 6.1 LM317 Adjustable Voltage Regulator"
+               oninput="cards[${id}].caption = this.value"/>
+      </div>
+    </div>
+    <button class="btn-remove" onclick="removeFigure(${id})" title="Remove">✕</button>
+  `;
+  document.getElementById('figCards').appendChild(card);
+}
 
-            try {
-                // 1. Create a dedicated off-screen container for rendering
-                const container = document.createElement('div');
-                container.className = 'pdf-export-container';
+/* ── REMOVE FIGURE ──────────────────────────── */
+function removeFigure(id) {
+  const c = document.getElementById(`card-${id}`);
+  if (c) {
+    c.style.opacity = '0';
+    c.style.transform = 'translateY(-6px)';
+    c.style.transition = 'all .18s ease';
+    setTimeout(() => { c.remove(); delete cards[id]; checkEmpty(); }, 180);
+  }
+}
 
-                // 2. Construct the HTML matching your required format
-                let htmlContent = `<div class="pdf-export-title">${mainTitle}</div>`;
+function checkEmpty() {
+  if (!document.querySelector('.fig-card')) {
+    const e = document.createElement('div');
+    e.className = 'empty-state'; e.id = 'emptyState';
+    e.innerHTML = '<div class="em-icon">🖼️</div><p>No figures yet — click <strong>Add Figure</strong> to begin.</p>';
+    document.getElementById('figCards').appendChild(e);
+  }
+}
 
-                figuresData.forEach(fig => {
-                    htmlContent += `
-                        <div class="pdf-export-figure">
-                            <img class="pdf-export-img" src="${fig.image}" />
-                            <div class="pdf-export-caption">${fig.caption}</div>
-                        </div>
-                    `;
-                });
+/* ── FILE & DRAG ─────────────────────────────── */
+function fileChosen(input, id) {
+  const file = input.files[0];
+  if (!file) return;
+  readFile(file, id);
+}
+function dzOver(e, id)  { e.preventDefault(); document.getElementById('dz-'+id).classList.add('drag-over'); }
+function dzLeave(id)    { document.getElementById('dz-'+id).classList.remove('drag-over'); }
+function dzDrop(e, id)  {
+  e.preventDefault();
+  dzLeave(id);
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) readFile(file, id);
+}
+function readFile(file, id) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    cards[id].base64 = ev.target.result;
+    document.getElementById('thumb-'+id).src = ev.target.result;
+    document.getElementById('tw-'+id).style.display = 'block';
+    document.getElementById('dz-'+id).style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+function clearImage(id) {
+  cards[id].base64 = null;
+  document.getElementById('thumb-'+id).src = '';
+  document.getElementById('tw-'+id).style.display = 'none';
+  document.getElementById('dz-'+id).style.display = 'flex';
+}
 
-                htmlContent += `
-                    <div class="pdf-export-footer">
-                        ${studentName}<br>${rollNumber}
-                    </div>
-                `;
+/* ── PDF GENERATION ──────────────────────────── */
+async function generatePDF() {
+  if (busy) return;
 
-                container.innerHTML = htmlContent;
-                document.body.appendChild(container);
+  const title  = document.getElementById('mainTitle').value.trim()    || 'EXPERIMENT';
+  const name   = document.getElementById('studentName').value.trim()  || 'Student';
+  const rollno = document.getElementById('rollNumber').value.trim()   || 'Roll No';
 
-                // Wait 300ms to ensure the browser strictly paints the DOM before capture
-                await new Promise(resolve => setTimeout(resolve, 300)); 
+  // Collect figures that have images
+  const figs = Object.entries(cards)
+    .filter(([,v]) => v.base64)
+    .map(([,v]) => ({ img: v.base64, caption: v.caption || 'Figure' }));
 
-                // 3. Configure html2pdf settings for "Best Generation"
-                const opt = {
-                    margin:       [20, 15, 20, 15], // Top, Left, Bottom, Right
-                    filename:     `${mainTitle.replace(/\s+/g, '_')}_${rollNumber}.pdf`,
-                    image:        { type: 'jpeg', quality: 1.0 }, // Max quality
-                    html2canvas:  { 
-                        scale: 3, // High resolution (3x scale) for crisp text/images
-                        useCORS: true,
-                        windowWidth: 800, // Enforce width to keep layout identical across devices
-                        logging: false 
-                    },
-                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // Prevents cutting images in half
-                };
+  if (figs.length === 0) {
+    toast('⚠️ Upload at least one image first!');
+    return;
+  }
 
-                // 4. Generate & Save
-                await html2pdf().set(opt).from(container).save();
+  // Lock
+  busy = true;
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block">⏳</span>&nbsp; Generating PDF…';
 
-                // 5. Cleanup
-                document.body.removeChild(container);
+  setProgress(10);
 
-            } catch (error) {
-                console.error("PDF Generation failed:", error);
-                alert("An error occurred. Please ensure your images are not corrupted and try again.");
-            } finally {
-                // Unlock UI
-                isGenerating = false;
-                overlay.classList.add('hidden');
-                overlay.classList.remove('flex');
-            }
-        }
+  try {
+    // Build stage HTML
+    const stage = document.getElementById('pdf-stage');
+    stage.innerHTML = buildPDFHTML(title, name, rollno, figs);
 
-        // Add 2 initial rows on load for convenience
-        window.onload = () => {
-            addFigureRow();
-            addFigureRow();
-        };
-    </script>
+    setProgress(30);
+
+    // Wait for images to fully paint
+    await waitForImages(stage);
+    setProgress(55);
+
+    // Small breathing room
+    await delay(200);
+    setProgress(70);
+
+    const filename = `${title.replace(/\s+/g,'_')}_${rollno}.pdf`;
+
+    const opt = {
+      margin:      [16, 15, 16, 15],
+      filename,
+      image:       { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2.5, useCORS: true, windowWidth: 794, logging: false, imageTimeout: 15000 },
+      jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:   { mode: ['css', 'legacy'], avoid: '.pdf-fig' }
+    };
+
+    setProgress(80);
+
+    // ── FIX for double-PDF: use outputPdf('blob') then trigger download ONCE ──
+    const worker = html2pdf().set(opt).from(stage);
+    const blob   = await worker.outputPdf('blob');
+
+    setProgress(95);
+
+    triggerDownload(blob, filename);
+
+    // Cleanup
+    stage.innerHTML = '';
+    setProgress(100);
+    toast('✅ PDF downloaded successfully!');
+
+    setTimeout(() => setProgress(0), 800);
+
+  } catch (err) {
+    console.error(err);
+    toast('❌ Error generating PDF. Please try again.');
+    document.getElementById('pdf-stage').innerHTML = '';
+    setProgress(0);
+  } finally {
+    busy = false;
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-icon">⬇</span> Generate &amp; Download PDF';
+  }
+}
+
+/* ── TRIGGER DOWNLOAD (fires exactly once) ──── */
+function triggerDownload(blob, filename) {
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href     = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/* ── BUILD PDF HTML ──────────────────────────── */
+function buildPDFHTML(title, name, rollno, figs) {
+  let html = `
+    <div class="pdf-page">
+      <div class="pdf-h1">${escHtml(title)}</div>
+  `;
+
+  figs.forEach(f => {
+    html += `
+      <div class="pdf-fig">
+        <img src="${f.img}" alt="${escHtml(f.caption)}"/>
+        <div class="pdf-caption">${escHtml(f.caption)}</div>
+      </div>
+    `;
+  });
+
+  html += `
+      <div class="pdf-footer">${escHtml(name)}<br/>${escHtml(rollno)}</div>
+    </div>
+  `;
+  return html;
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+/* ── HELPERS ─────────────────────────────────── */
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function waitForImages(container) {
+  const imgs = [...container.querySelectorAll('img')];
+  return Promise.all(imgs.map(img =>
+    img.complete
+      ? Promise.resolve()
+      : new Promise(res => { img.onload = res; img.onerror = res; })
+  ));
+}
+
+/* ── INIT ────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+  addFigure();
+  addFigure();
+});
+
+/* spinner keyframe */
+const style = document.createElement('style');
+style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(style);
+</script>
 </body>
 </html>
-
-
